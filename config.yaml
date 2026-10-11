@@ -1,0 +1,15 @@
+# 매수 기준 대시보드 설정 — 숫자만 바꿔서 자기 기준으로 쓰면 됩니다.
+server:
+  host: 127.0.0.1
+  port: 8000
+  open_browser: true
+
+cache_ttl_seconds: 600
+
+indicators:
+  fear_greed:     { enabled: true, strong_below: 20, signal_below: 25 }
+  vix:            { enabled: true, strong_at_or_above: 30, signal_at_or_above: 25 }
+  market_mdd:     { enabled: true, index: "^GSPC", signal_at_or_below: -0.14, strong_at_or_below: -0.20 }
+  rsi:            { enabled: true, period: 14, daily_at_or_below: 30, weekly_at_or_below: 35 }
+  mdd:            { enabled: true, lookback_days: 252, signal_at_or_below: -0.14, strong_at_or_below: -0.20 }
+  moving_average: { enabled: true, daily_window: 200, weekly_window: 200, strong_gap_at_or_below: -0.05 }
