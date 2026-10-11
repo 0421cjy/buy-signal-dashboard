@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 from app.config import DEFAULT_CONFIG
-from app.indicators import mdd, moving_average, rsi
+from app.indicators import market_mdd, mdd, moving_average, rsi
 from app.indicators.base import INSUFFICIENT, NEUTRAL, SIGNAL, STRONG, EvalContext
 from tests.helpers import series
 
@@ -96,23 +96,34 @@ def test_ytd_drawdown_resets_each_year():
     assert mdd.ytd_drawdown(s).iloc[-1] == pytest.approx(-0.05)
 
 
-def test_ticker_mdd_levels_offset_from_stock_average():
-    # 연평균 -20% → 매수 시작 -20%, 비중 확대 -36%(-16%p), 극단 -53%(-33%p)
+def test_ticker_mdd_levels_follow_remaining_price_ratio():
+    # 남은 가격 86% → 70% → 53%의 비율(86%를 약 2.37번, 4.21번 곱함)을 종목 평균에 적용
+    # 연평균 -20%(80% 남음) → -20% / 0.8^2.365-1 ≈ -41.0% / 0.8^4.209-1 ≈ -60.9%
     r = mdd.Mdd().evaluate(ctx(IND["mdd"], history([-0.2, -0.1, -0.3], [100, 75])))
     assert r.scored is True
     assert r.value == pytest.approx(-0.25)
     assert r.status == SIGNAL
-    assert r.thresholds == pytest.approx([-20.0, -36.0, -53.0])
+    assert r.thresholds == pytest.approx([-20.0, -41.0042, -60.9101], abs=1e-3)
     assert r.details["연평균 최대 하락률"] == "-20.0% (3년)"
-    assert r.threshold == "-20.0% 이하 매수 시작 · -36.0% 이하 비중 확대 · -53.0% 이하 극단적 하락"
+    assert r.threshold == "-20.0% 이하 매수 시작 · -41.0% 이하 비중 확대 · -60.9% 이하 극단적 하락"
 
 
 def test_ticker_mdd_keeps_decimal_precision():
-    # 연평균 -34.1% → -34.1% / -50.1% / -67.1%, 경계값 정확히 -34.1%는 신호
+    # 연평균 -34.1% → -34.1% / -62.7% / -82.7%, 경계값 정확히 -34.1%는 신호
     r = mdd.Mdd().evaluate(ctx(IND["mdd"], history([-0.341, -0.341, -0.341], [100, 65.9])))
-    assert r.thresholds == pytest.approx([-34.1, -50.1, -67.1])
+    assert r.thresholds == pytest.approx([-34.1, -62.7017, -82.7173], abs=1e-3)
     assert "-34.1% 이하 매수 시작" in r.threshold
     assert r.status == SIGNAL
+
+
+def test_mdd_levels_with_market_average_equal_base_levels():
+    lv = market_mdd.levels(IND["mdd"], anchor=-0.14)
+    assert [round(v, 10) for v in lv.values()] == [-0.14, -0.30, -0.47]
+
+
+def test_mdd_levels_never_reach_minus_100_percent():
+    lv = market_mdd.levels(IND["mdd"], anchor=-0.6)
+    assert -1 < lv["extreme"] < lv["strong"] < lv["signal"] == -0.6
 
 
 def test_ticker_mdd_above_scaled_level_is_neutral():

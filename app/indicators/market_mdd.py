@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from typing import Dict, List, Optional
 
 from app.indicators.base import (
@@ -17,14 +18,22 @@ _PRECISION = 9  # 65.9/100-1 = -0.34099999… 같은 부동소수점 오차로 �
 
 def levels(cfg: dict, anchor: Optional[float] = None) -> Dict[str, float]:
     """매수 시작·비중 확대·극단적 하락 구간.
-    anchor(종목 연평균 최대 하락률)가 있으면 매수 시작을 anchor로 옮기고,
-    나머지 두 구간은 기본값의 간격(-16%p, -33%p)을 그대로 유지한다."""
+
+    anchor(종목 연평균 최대 하락률)가 있으면 매수 시작을 anchor로 두고, 나머지 두 구간은
+    기본 구간의 '남은 가격' 비율을 그대로 적용한다. 기본값이면 86% → 70% → 53%이므로
+    70% = 86%^2.37, 53% = 86%^4.21 이고, 종목에는 (1 + anchor)를 같은 횟수만큼 거듭제곱한다.
+    결과는 -100%에 닿지 않고, anchor가 기본 매수 시작값이면 기본 구간과 정확히 같다."""
     signal = cfg["signal_at_or_below"]
-    shift = 0.0 if anchor is None else anchor - signal
+    strong = cfg["strong_at_or_below"]
+    extreme = cfg["extreme_at_or_below"]
+    if anchor is None:
+        return {"signal": signal, "strong": strong, "extreme": extreme}
+    base = math.log(1 + signal)
+    remaining = 1 + anchor
     return {
-        "signal": signal + shift,
-        "strong": cfg["strong_at_or_below"] + shift,
-        "extreme": cfg["extreme_at_or_below"] + shift,
+        "signal": anchor,
+        "strong": remaining ** (math.log(1 + strong) / base) - 1,
+        "extreme": remaining ** (math.log(1 + extreme) / base) - 1,
     }
 
 
