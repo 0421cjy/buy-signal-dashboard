@@ -21,3 +21,9 @@ def test_assets_served():
     c = client()
     assert c.get("/static/app.js").status_code == 200
     assert c.get("/static/style.css").status_code == 200
+
+
+def test_page_and_assets_revalidate_after_updates():
+    c = client()
+    for path in ("/", "/static/app.js", "/static/style.css"):
+        assert c.get(path).headers.get("cache-control") == "no-cache", path

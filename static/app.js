@@ -10,7 +10,8 @@ const STATUS = {
 const EVALUATED = ["strong_signal", "signal", "neutral"];
 const RECENT_KEY = "buy-signal:recent";
 
-const state = { market: [], ticker: [], tickerInfo: null, charts: {}, detail: null, detailResult: null, detailRange: "1y" };
+// marketSeq/tickerSeq: 늦게 도착한 이전 요청의 응답이 최신 결과를 덮어쓰지 않게 하는 순번
+const state = { market: [], ticker: [], tickerInfo: null, charts: {}, detail: null, detailResult: null, detailRange: "1y", marketSeq: 0, tickerSeq: 0 };
 
 const $ = (id) => document.getElementById(id);
 
@@ -163,13 +164,16 @@ function setUpdated(iso) {
 }
 
 async function loadMarket(refresh = false) {
+  const seq = ++state.marketSeq;
   renderMessage("market-cards", "시장 지표를 불러오는 중…");
   try {
     const body = await getJSON(`/api/market${refresh ? "?refresh=1" : ""}`);
+    if (seq !== state.marketSeq) return;
     state.market = body.results;
     renderCards("market-cards", state.market, () => loadMarket(true));
     setUpdated(body.fetched_at);
   } catch (err) {
+    if (seq !== state.marketSeq) return;
     state.market = [];
     renderMessage("market-cards", `시장 지표를 불러오지 못했습니다: ${err.message}`);
   }
@@ -179,10 +183,12 @@ async function loadMarket(refresh = false) {
 async function loadTicker(raw, refresh = false) {
   const symbol = raw.trim();
   if (!symbol) return;
+  const seq = ++state.tickerSeq;
   $("ticker-error").hidden = true;
   renderMessage("ticker-cards", `${symbol} 조회 중…`);
   try {
     const body = await getJSON(`/api/ticker/${encodeURIComponent(symbol)}${refresh ? "?refresh=1" : ""}`);
+    if (seq !== state.tickerSeq) return;
     state.ticker = body.results;
     state.tickerInfo = { symbol: body.symbol, name: body.name };
     $("ticker-title").textContent = `종목 지표 · ${body.name} (${body.symbol})`;
@@ -190,6 +196,7 @@ async function loadTicker(raw, refresh = false) {
     rememberTicker(body.symbol);
     setUpdated(body.fetched_at);
   } catch (err) {
+    if (seq !== state.tickerSeq) return;
     $("ticker-error").textContent = err.message;
     $("ticker-error").hidden = false;
     if (!state.tickerInfo) {

@@ -18,6 +18,14 @@ from app.indicators.registry import evaluate_scope
 from app.scoring import score
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
+NO_CACHE = {"Cache-Control": "no-cache"}  # 코드를 업데이트하면 브라우저가 새 파일을 받도록 매번 재검증
+
+
+class NoCacheStaticFiles(StaticFiles):
+    def file_response(self, *args, **kwargs):
+        response = super().file_response(*args, **kwargs)
+        response.headers.update(NO_CACHE)
+        return response
 
 
 def create_app(
@@ -83,9 +91,9 @@ def create_app(
 
     @app.get("/")
     def index():
-        return FileResponse(STATIC_DIR / "index.html")
+        return FileResponse(STATIC_DIR / "index.html", headers=NO_CACHE)
 
-    app.mount("/static", StaticFiles(directory=STATIC_DIR, check_dir=False), name="static")
+    app.mount("/static", NoCacheStaticFiles(directory=STATIC_DIR, check_dir=False), name="static")
     return app
 
 
