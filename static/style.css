@@ -123,6 +123,13 @@ button:disabled { opacity: 0.6; cursor: progress; }
 .details dd { margin: 0; font-variant-numeric: tabular-nums; }
 .mini { height: 70px; position: relative; }
 .hint { color: var(--muted); }
+.site-footer {
+  max-width: 1120px; margin: 32px auto 0; padding: 20px 16px 32px; border-top: 1px solid var(--border);
+  color: var(--muted); font-size: 0.85rem; line-height: 1.6;
+}
+.site-footer p { margin: 0 0 8px; }
+.site-footer .disclaimer { color: var(--text); }
+.site-footer a { color: var(--accent); }
 dialog {
   width: min(960px, calc(100vw - 32px)); border: 1px solid var(--border); border-radius: 14px;
   background: var(--surface); color: var(--text); padding: 16px;

@@ -36,3 +36,11 @@ def test_suggest_assets_served():
     assert resp.status_code == 200
     assert any(item["symbol"] == "005930.KS" for item in resp.json())
     assert "suggest.js" in c.get("/").text
+
+
+def test_footer_has_disclaimer_and_github_link():
+    html = client().get("/").text
+    footer = html[html.index("<footer"):html.index("</footer>")]
+    assert "투자 권유가 아닙니다" in footer
+    assert 'href="https://github.com/0421cjy/buy-signal-dashboard"' in footer
+    assert 'rel="noopener noreferrer"' in footer

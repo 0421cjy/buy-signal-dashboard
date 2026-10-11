@@ -245,7 +245,7 @@ async function loadTicker(raw, refresh = false) {
     if (keep) {
       // 기존 카드 유지
     } else if (!state.tickerInfo) {
-      renderMessage("ticker-cards", "티커를 검색하면 RSI, MDD(52주 고점 대비), 200일/200주 이동평균을 확인할 수 있습니다.");
+      renderMessage("ticker-cards", "티커를 검색하면 RSI, MDD(올해 고점 대비), 200일/200주 이동평균을 확인할 수 있습니다.");
     } else {
       renderCards("ticker-cards", state.ticker, () => loadTicker(state.tickerInfo.symbol, true));
     }
