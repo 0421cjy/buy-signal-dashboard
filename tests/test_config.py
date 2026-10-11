@@ -27,3 +27,7 @@ def test_empty_file_returns_defaults(tmp_path):
 
 def test_repo_config_matches_defaults():
     assert load_config() == DEFAULT_CONFIG
+
+
+def test_moving_average_has_no_gap_threshold():
+    assert "strong_gap_at_or_below" not in DEFAULT_CONFIG["indicators"]["moving_average"]

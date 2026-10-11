@@ -134,13 +134,9 @@ IndicatorResult:
 
 ### 5.5 200일 / 200주 이동평균 — ticker
 - 계산: 200일 SMA(일봉 종가), 200주 SMA(주봉 종가, 주 마지막 거래일 기준). 이격도 = `현재가 / SMA − 1`
-- 판정: 200일과 200주 각각에 대해 다음과 같이 판정하고, 둘 중 더 강한 상태를 지표의 status로 쓴다.
-  - 이격도 `≤ −5%` (이평선 아래로 5% 이상 이탈) → strong_signal
-  - `−5% < 이격도 < 0` (이평선 아래) → signal
-  - 이격도 `≥ 0` → neutral
-  - 예: 200일 −2%(signal), 200주 +10%(neutral) → signal / 200일 −7%(strong) → strong_signal
-- details: 200일 이격도·판정, 200주 이격도·판정
-- 200주 데이터가 부족하면 200주 항목을 "데이터 부족"으로 표시하고 200일만으로 판정한다. 200일 데이터도 부족하면 status는 `insufficient_data`다.
+- 판정: 현재가가 200일 SMA 아래, 200주 SMA 아래인지 각각 확인한다. 하나만 아래 → signal / 둘 다 아래 → strong_signal / 둘 다 위 → neutral
+- details: 200일 이격도·이탈 여부, 200주 이격도·이탈 여부
+- 200주 데이터가 부족하면 200주 항목을 "데이터 부족"으로 표시하고 200일만으로 판정한다(최대 signal). 200일 데이터도 부족하면 status는 `insufficient_data`다.
 
 ### 5.6 종합 점수
 - 대상: `scored: true`인 지표만 (공포·탐욕, VIX, RSI, 종목 MDD, 이동평균). S&P 500 MDD는 제외한다.
@@ -202,7 +198,7 @@ indicators:
   mdd:        { enabled: true, lookback_days: 252, signal_at_or_below: -0.14, strong_at_or_below: -0.20 }
   market_mdd: { enabled: true, index: "^GSPC", signal_at_or_below: -0.14, strong_at_or_below: -0.20 }
   rsi:        { enabled: true, period: 14, daily_at_or_below: 30, weekly_at_or_below: 35 }
-  moving_average: { enabled: true, daily_window: 200, weekly_window: 200, strong_gap_at_or_below: -0.05 }
+  moving_average: { enabled: true, daily_window: 200, weekly_window: 200 }
 ```
 
 `enabled: false`로 두면 해당 지표를 계산하지도, 표시하지도 않는다.

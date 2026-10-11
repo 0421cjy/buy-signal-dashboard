@@ -5,11 +5,10 @@ from typing import Optional
 import pandas as pd
 
 from app.indicators.base import (
-    NEUTRAL, SIGNAL, STATUS_TEXT, STRONG, EvalContext, Indicator, IndicatorResult,
-    as_of, fmt_pct, register, strongest, to_points,
+    NEUTRAL, SIGNAL, STRONG, EvalContext, Indicator, IndicatorResult, as_of, fmt_pct, register, to_points,
 )
 
-_LABELS = {STRONG: "장기 이평선 아래로 크게 이탈", SIGNAL: "장기 이평선 아래", NEUTRAL: "장기 이평선 위"}
+_LABELS = {STRONG: "200일선·200주선 모두 아래", SIGNAL: "200일선·200주선 중 하나 아래", NEUTRAL: "장기 이평선 위"}
 
 
 def to_weekly(s: pd.Series) -> pd.Series:
@@ -21,12 +20,18 @@ def to_weekly(s: pd.Series) -> pd.Series:
     return s[last_of_week]
 
 
-def grade_gap(gap: float, cfg: dict) -> str:
-    if gap <= cfg["strong_gap_at_or_below"]:
+def grade(daily_gap: float, weekly_gap: Optional[float]) -> str:
+    """이평선 아래로 내려간 개수: 1개면 신호, 2개면 강한 신호."""
+    below = int(daily_gap < 0) + int(weekly_gap is not None and weekly_gap < 0)
+    if below == 2:
         return STRONG
-    if gap < 0:
+    if below == 1:
         return SIGNAL
     return NEUTRAL
+
+
+def _mark(gap: float) -> str:
+    return f"{fmt_pct(gap)} ({'이탈' if gap < 0 else '위'})"
 
 
 def _gap(price: float, sma: pd.Series) -> Optional[float]:
@@ -55,27 +60,19 @@ class MovingAverage(Indicator):
         weekly_sma = weekly.rolling(ww).mean() if len(weekly) >= ww else None
 
         gap_d = _gap(price, daily_sma)
-        status_d = grade_gap(gap_d, cfg)
-        details = {f"{dw}일 이격도": f"{fmt_pct(gap_d)} ({STATUS_TEXT[status_d]})"}
+        gap_w = _gap(price, weekly_sma) if weekly_sma is not None else None
+        details = {f"{dw}일 이격도": _mark(gap_d), f"{ww}주 이격도": _mark(gap_w) if gap_w is not None else "데이터 부족"}
         overlays = {f"{dw}일선": to_points(daily_sma)}
-        statuses = [status_d]
-
         if weekly_sma is not None:
-            gap_w = _gap(price, weekly_sma)
-            status_w = grade_gap(gap_w, cfg)
-            statuses.append(status_w)
-            details[f"{ww}주 이격도"] = f"{fmt_pct(gap_w)} ({STATUS_TEXT[status_w]})"
             overlays[f"{ww}주선"] = to_points(weekly_sma.reindex(s.index, method="ffill"))
-        else:
-            details[f"{ww}주 이격도"] = "데이터 부족"
 
-        status = strongest(*statuses)
+        status = grade(gap_d, gap_w)
         return self.make(
             status=status,
             value=gap_d,
             display=fmt_pct(gap_d),
             label=_LABELS[status],
-            threshold=f"이평선 아래 신호 · {cfg['strong_gap_at_or_below'] * 100:.0f}% 이상 이탈 강한 신호",
+            threshold=f"{dw}일선·{ww}주선 중 하나 아래 신호 · 둘 다 아래 강한 신호",
             as_of=as_of(s),
             details=details,
             history=to_points(s),

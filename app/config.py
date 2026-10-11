@@ -17,7 +17,7 @@ DEFAULT_CONFIG: dict = {
         "market_mdd": {"enabled": True, "index": "^GSPC", "signal_at_or_below": -0.14, "strong_at_or_below": -0.20},
         "rsi": {"enabled": True, "period": 14, "daily_at_or_below": 30, "weekly_at_or_below": 35},
         "mdd": {"enabled": True, "lookback_days": 252, "signal_at_or_below": -0.14, "strong_at_or_below": -0.20},
-        "moving_average": {"enabled": True, "daily_window": 200, "weekly_window": 200, "strong_gap_at_or_below": -0.05},
+        "moving_average": {"enabled": True, "daily_window": 200, "weekly_window": 200},
     },
 }
 

@@ -84,34 +84,39 @@ def test_ticker_mdd_short_history_uses_available_high():
     assert r.status == STRONG
 
 
-# --- 이동평균 -----------------------------------------------------------
+# --- 이동평균: 200일·200주 중 이탈 개수 ------------------------------
 
-@pytest.mark.parametrize("gap,expected", [(0.0, NEUTRAL), (0.02, NEUTRAL), (-0.001, SIGNAL), (-0.049, SIGNAL), (-0.05, STRONG), (-0.2, STRONG)])
-def test_grade_gap(gap, expected):
-    assert moving_average.grade_gap(gap, IND["moving_average"]) == expected
+@pytest.mark.parametrize(
+    "daily,weekly,expected",
+    [(-0.01, -0.01, STRONG), (-0.01, 0.02, SIGNAL), (0.0, -0.3, SIGNAL), (0.0, 0.0, NEUTRAL), (-0.2, None, SIGNAL), (0.1, None, NEUTRAL)],
+)
+def test_ma_grade_counts_lines_below(daily, weekly, expected):
+    assert moving_average.grade(daily, weekly) == expected
 
 
-def test_ma_both_available_signal():
+def test_ma_both_below_is_strong():
     s = series([100] * 1100 + [97])  # 200일·200주 모두 약 -3%
     r = moving_average.MovingAverage().evaluate(ctx(IND["moving_average"], s))
-    assert r.status == SIGNAL
-    assert r.details["200일 이격도"].startswith("-3.0%")
-    assert r.details["200주 이격도"].startswith("-3.0%")
+    assert r.status == STRONG
+    assert r.details["200일 이격도"] == "-3.0% (이탈)"
+    assert r.details["200주 이격도"] == "-3.0% (이탈)"
     assert set(r.overlays) == {"200일선", "200주선"}
 
 
-def test_ma_strong_when_5pct_below():
-    s = series([100] * 1100 + [90])
-    assert moving_average.MovingAverage().evaluate(ctx(IND["moving_average"], s)).status == STRONG
+def test_ma_only_daily_below_is_signal():
+    up = [50 + i * 100 / 1099 for i in range(1100)]  # 장기 상승 → 200주선은 한참 아래
+    r = moving_average.MovingAverage().evaluate(ctx(IND["moving_average"], series(up + [140])))
+    assert r.details["200일 이격도"].endswith("(이탈)")
+    assert r.details["200주 이격도"].endswith("(위)")
+    assert r.status == SIGNAL
 
 
-def test_ma_takes_strongest_of_daily_and_weekly():
-    # 오래 200 → 최근 300일 100: 200일선 약 100(이격 -2%), 200주선은 100보다 훨씬 위(이격 -5% 이하)
-    s = series([200] * 900 + [100] * 300 + [98])
+def test_ma_only_weekly_below_is_signal():
+    s = series([200] * 900 + [100] * 300 + [110])  # 200일선(약 100) 위, 200주선(약 170) 아래
     r = moving_average.MovingAverage().evaluate(ctx(IND["moving_average"], s))
-    assert r.details["200일 이격도"].endswith("(신호)")
-    assert r.details["200주 이격도"].endswith("(강한 신호)")
-    assert r.status == STRONG
+    assert r.details["200일 이격도"].endswith("(위)")
+    assert r.details["200주 이격도"].endswith("(이탈)")
+    assert r.status == SIGNAL
 
 
 def test_ma_above_both_neutral():
