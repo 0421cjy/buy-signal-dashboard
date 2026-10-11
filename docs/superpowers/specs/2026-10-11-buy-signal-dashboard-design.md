@@ -123,11 +123,12 @@ IndicatorResult:
 - 공통 구간과 행동: `≤ −14%` signal(헷지 자산 일부 매도 → 주식 매수 시작) / `≤ −30%` strong_signal(헷지 자산 추가 매도 → 비중 확대) / `≤ −47%` strong_signal + 경고 문구 "⚠ 극단적 하락 구간입니다"(`warning` 필드)
 - **종목 MDD (`mdd`, scope ticker, scored)**
   - 현재 하락률: `현재 종가 / 올해 최고 종가 − 1`
-  - 배율: 끝난 해별 연중 최대 하락률(그해 최고점 대비)의 평균 ÷ `base_average`(−14%). 거래일 200일 미만인 해와 올해는 제외. 끝난 해가 3년 미만이면 배율 1
-  - 구간 = 공통 구간 × 배율
+  - 연평균 최대 하락률 A: 끝난 해별 연중 최대 하락률(그해 최고점 대비)의 평균. 거래일 200일 미만인 해와 올해는 제외
+  - 구간: 매수 시작 = A, 비중 확대 = A − 16%p, 극단적 하락 = A − 33%p (공통 구간의 간격 유지). 끝난 해가 3년 미만이면 공통 구간 그대로
+  - 경계 비교는 소수 9자리 반올림 후 수행(부동소수점 오차 방지), 기준 문구는 소수 1자리 표시
   - details: 연평균 최대 하락률(년수), 52주 고점 대비, 사상 최고가 대비
 - **S&P 500 MDD (`market_mdd`, scope market, 참고용 `scored: false`)**
-  - `현재 종가 / 전체 이력 최고 종가 − 1`, 공통 구간을 배율 없이 적용
+  - `현재 종가 / 전체 이력 최고 종가 − 1`, 공통 구간을 그대로 적용
 
 ### 5.5 200일 / 200주 이동평균 — ticker
 - 계산: 200일 SMA(일봉 종가), 200주 SMA(주봉 종가, 주 마지막 거래일 기준). 이격도 = `현재가 / SMA − 1`
@@ -192,7 +193,7 @@ cache_ttl_seconds: 600
 indicators:
   fear_greed: { enabled: true, strong_below: 20, signal_below: 25 }
   vix:        { enabled: true, strong_at_or_above: 30, signal_at_or_above: 25 }
-  mdd:        { enabled: true, base_average: -0.14, signal_at_or_below: -0.14, strong_at_or_below: -0.30, extreme_at_or_below: -0.47, min_years: 3, min_days_per_year: 200 }
+  mdd:        { enabled: true, signal_at_or_below: -0.14, strong_at_or_below: -0.30, extreme_at_or_below: -0.47, min_years: 3, min_days_per_year: 200 }
   market_mdd: { enabled: true, index: "^GSPC", signal_at_or_below: -0.14, strong_at_or_below: -0.30, extreme_at_or_below: -0.47 }
   rsi:        { enabled: true, period: 14, daily_at_or_below: 30, weekly_at_or_below: 35 }
   moving_average: { enabled: true, daily_window: 200, weekly_window: 200 }

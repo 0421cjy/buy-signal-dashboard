@@ -20,7 +20,7 @@ DEFAULT_CONFIG: dict = {
         },
         "rsi": {"enabled": True, "period": 14, "daily_at_or_below": 30, "weekly_at_or_below": 35},
         "mdd": {
-            "enabled": True, "base_average": -0.14,
+            "enabled": True,
             "signal_at_or_below": -0.14, "strong_at_or_below": -0.30, "extreme_at_or_below": -0.47,
             "min_years": 3, "min_days_per_year": 200,
         },

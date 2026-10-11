@@ -37,12 +37,11 @@ class Mdd(Indicator):
         years = annual_max_drawdowns(s, int(cfg["min_days_per_year"]))
         if len(years) >= int(cfg["min_years"]):
             average = float(years.mean())
-            scale = average / cfg["base_average"]
+            lv = levels(cfg, anchor=average)
             basis = f"{fmt_pct(average)} ({len(years)}년)"
         else:
-            scale = 1.0
+            lv = levels(cfg)
             basis = f"이력 부족({len(years)}년) · 기본 기준 사용"
-        lv = levels(cfg, scale)
 
         drawdown = ytd_drawdown(s)
         value = float(drawdown.iloc[-1])

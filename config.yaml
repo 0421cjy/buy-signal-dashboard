@@ -13,11 +13,11 @@ indicators:
   market_mdd:
     { enabled: true, index: "^GSPC", signal_at_or_below: -0.14, strong_at_or_below: -0.30, extreme_at_or_below: -0.47 }
   rsi:            { enabled: true, period: 14, daily_at_or_below: 30, weekly_at_or_below: 35 }
-  # 종목 MDD: 올해 고점 대비. 구간은 종목의 연평균 최대 하락률 / base_average 배율로 조정
-  # (끝난 해가 min_years 미만이면 배율 1, 즉 아래 숫자 그대로)
+  # 종목 MDD: 올해 고점 대비. 매수 시작 = 종목 연평균 최대 하락률,
+  # 비중 확대·극단적 하락은 아래 숫자의 간격(-16%p, -33%p)을 유지해 함께 이동
+  # (끝난 해가 min_years 미만이면 아래 숫자 그대로)
   mdd:
     enabled: true
-    base_average: -0.14
     signal_at_or_below: -0.14
     strong_at_or_below: -0.30
     extreme_at_or_below: -0.47

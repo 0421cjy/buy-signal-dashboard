@@ -83,3 +83,15 @@ def test_market_mdd_extreme_shows_warning():
 
 def test_market_mdd_name_has_no_reference_suffix():
     assert market_mdd.MarketMdd.name == "S&P 500 MDD"
+
+
+def test_market_mdd_threshold_text_has_decimals():
+    r = market_mdd.MarketMdd().evaluate(ctx(IND["market_mdd"], daily={"^GSPC": series([100, 90])}))
+    assert r.threshold == "-14.0% 이하 매수 시작 · -30.0% 이하 비중 확대 · -47.0% 이하 극단적 하락"
+
+
+@pytest.mark.parametrize("level,dd", [(-0.341, 65.9 / 100 - 1), (-0.341, 164.75 / 250 - 1), (-0.161, 83.9 / 100 - 1)])
+def test_mdd_boundary_float_noise_still_hits_level(level, dd):
+    lv = {"signal": level, "strong": level, "extreme": level}
+    assert market_mdd.grade(dd, lv) != NEUTRAL
+    assert market_mdd.is_extreme(dd, lv)
