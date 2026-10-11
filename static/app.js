@@ -79,7 +79,7 @@ function chartConfig(r, range, mini) {
   });
   (r.thresholds || []).forEach((t) => {
     datasets.push({
-      label: `기준 ${t}`, data: labels.map(() => t),
+      label: `기준 ${t}`, isThreshold: true, data: labels.map(() => t),
       borderColor: css("--threshold"), borderDash: [4, 4], borderWidth: 1, pointRadius: 0,
     });
   });
@@ -89,7 +89,14 @@ function chartConfig(r, range, mini) {
     options: {
       animation: false, responsive: true, maintainAspectRatio: false,
       interaction: { mode: "index", intersect: false },
-      plugins: { legend: { display: !mini, labels: { color: css("--muted") } }, tooltip: { enabled: !mini } },
+      plugins: {
+        legend: { display: !mini, labels: { color: css("--muted") } },
+        tooltip: {
+          enabled: !mini,
+          // 기준선은 값이 변하지 않으므로 "기준 30: 30" 대신 "기준 30" 하나만 표시
+          callbacks: { label: (item) => (item.dataset.isThreshold ? item.dataset.label : `${item.dataset.label}: ${item.formattedValue}`) },
+        },
+      },
       scales: {
         x: { display: !mini, ticks: { maxTicksLimit: 8, color: css("--muted") }, grid: { color: css("--border") } },
         y: { display: !mini, ticks: { color: css("--muted") }, grid: { color: css("--border") } },
