@@ -28,7 +28,7 @@ def test_fear_greed_evaluate():
     r = fear_greed.FearGreed().evaluate(ctx(IND["fear_greed"], fg=fg))
     assert r.status == STRONG
     assert r.value == 17.0
-    assert r.display == "17"
+    assert r.display == "17.0"
     assert r.as_of == "2026-10-09"
     assert r.thresholds == [20, 25]
     assert r.label == "극단적 공포"
@@ -63,3 +63,10 @@ def test_market_mdd_uses_all_time_high_and_is_not_scored():
     assert r.display == "-16.0%"
     assert r.history[-1]["value"] == pytest.approx(-16.0)
     assert r.thresholds == [-14.0, -20.0]
+
+
+def test_fear_greed_display_does_not_round_across_threshold():
+    fg = {"score": 24.6, "as_of": "2026-10-09", "history": []}
+    r = fear_greed.FearGreed().evaluate(ctx(IND["fear_greed"], fg=fg))
+    assert r.status == SIGNAL
+    assert r.display == "24.6"

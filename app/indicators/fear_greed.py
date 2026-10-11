@@ -28,7 +28,7 @@ class FearGreed(Indicator):
         return self.make(
             status=status,
             value=value,
-            display=f"{value:.0f}",
+            display=f"{value:.1f}",
             label=_LABELS[status],
             threshold=f"{cfg['strong_below']} 미만 강한 신호 · {cfg['signal_below']} 미만 신호",
             as_of=data.get("as_of"),
