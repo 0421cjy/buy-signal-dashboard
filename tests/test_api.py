@@ -103,3 +103,16 @@ def test_refresh_refetches_each_symbol_once():
     client.get("/api/ticker/AAPL")
     client.get("/api/ticker/AAPL?refresh=1")
     assert calls["AAPL"] == 2
+
+
+def test_settings_exposes_auto_refresh_minutes():
+    assert make_client().get("/api/settings").json() == {"auto_refresh_minutes": 10}
+
+
+def test_settings_auto_refresh_can_be_disabled():
+    import copy
+
+    cfg = copy.deepcopy(DEFAULT_CONFIG)
+    cfg["auto_refresh_minutes"] = 0
+    client = TestClient(create_app(config=cfg, fetch_daily=lambda s: None, fetch_fear_greed=dict, fetch_name=str))
+    assert client.get("/api/settings").json() == {"auto_refresh_minutes": 0}

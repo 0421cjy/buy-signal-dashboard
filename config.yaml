@@ -6,6 +6,9 @@ server:
 
 cache_ttl_seconds: 600
 
+# 화면을 띄워 두면 이 간격(분)마다 자동 새로고침합니다. 0이면 끕니다.
+auto_refresh_minutes: 10
+
 indicators:
   fear_greed:     { enabled: true, strong_below: 20, signal_below: 25 }
   vix:            { enabled: true, strong_at_or_above: 30, signal_at_or_above: 25 }

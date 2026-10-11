@@ -11,7 +11,7 @@ const EVALUATED = ["strong_signal", "signal", "neutral"];
 const RECENT_KEY = "buy-signal:recent";
 
 // marketSeq/tickerSeq: 늦게 도착한 이전 요청의 응답이 최신 결과를 덮어쓰지 않게 하는 순번
-const state = { market: [], ticker: [], tickerInfo: null, charts: {}, detail: null, detailResult: null, detailRange: "1y", marketSeq: 0, tickerSeq: 0 };
+const state = { market: [], ticker: [], tickerInfo: null, charts: {}, detail: null, detailResult: null, detailRange: "1y", marketSeq: 0, tickerSeq: 0, lastRefresh: 0 };
 
 const $ = (id) => document.getElementById(id);
 
@@ -276,18 +276,32 @@ function drawDetail() {
   state.detail = new Chart($("detail-canvas"), chartConfig(state.detailResult, state.detailRange, false));
 }
 
+async function refreshAll() {
+  const btn = $("refresh-btn");
+  if (btn.disabled) return; // 이미 갱신 중
+  btn.disabled = true;
+  btn.textContent = "갱신 중…";
+  state.lastRefresh = Date.now();
+  const jobs = [loadMarket(true)];
+  if (state.tickerInfo) jobs.push(loadTicker(state.tickerInfo.symbol, true));
+  await Promise.allSettled(jobs);
+  btn.disabled = false;
+  btn.textContent = "새로고침";
+}
+
+// 탭이 보이는 동안에만 일정 간격으로 refreshAll. 숨겨져 있던 탭은 다시 보일 때 간격이 지났으면 바로 갱신한다.
+function startAutoRefresh(minutes) {
+  if (!(minutes > 0)) return;
+  const intervalMs = minutes * 60 * 1000;
+  $("auto-refresh").textContent = `· ${minutes}분마다 자동 갱신`;
+  const due = () => !document.hidden && Date.now() - state.lastRefresh >= intervalMs;
+  setInterval(() => { if (due()) refreshAll(); }, Math.min(30000, intervalMs / 2));
+  document.addEventListener("visibilitychange", () => { if (due()) refreshAll(); });
+}
+
 function init() {
   $("search-form").addEventListener("submit", (e) => { e.preventDefault(); loadTicker($("ticker-input").value); });
-  $("refresh-btn").addEventListener("click", async () => {
-    const btn = $("refresh-btn");
-    btn.disabled = true;
-    btn.textContent = "갱신 중…";
-    const jobs = [loadMarket(true)];
-    if (state.tickerInfo) jobs.push(loadTicker(state.tickerInfo.symbol, true));
-    await Promise.allSettled(jobs);
-    btn.disabled = false;
-    btn.textContent = "새로고침";
-  });
+  $("refresh-btn").addEventListener("click", refreshAll);
   $("detail-close").addEventListener("click", () => $("detail").close());
   $("detail").addEventListener("click", (e) => { if (e.target === $("detail")) $("detail").close(); });
   document.querySelectorAll(".range button").forEach((b) => b.addEventListener("click", () => {
@@ -297,7 +311,9 @@ function init() {
   }));
   renderRecent();
   renderSummary();
+  state.lastRefresh = Date.now();
   loadMarket();
+  getJSON("/api/settings").then((s) => startAutoRefresh(s.auto_refresh_minutes)).catch(() => {});
 }
 
 document.addEventListener("DOMContentLoaded", init);

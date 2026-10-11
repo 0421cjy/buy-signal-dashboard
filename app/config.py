@@ -11,6 +11,7 @@ CONFIG_PATH = Path(__file__).resolve().parent.parent / "config.yaml"
 DEFAULT_CONFIG: dict = {
     "server": {"host": "127.0.0.1", "port": 8000, "open_browser": True},
     "cache_ttl_seconds": 600,
+    "auto_refresh_minutes": 10,
     "indicators": {
         "fear_greed": {"enabled": True, "strong_below": 20, "signal_below": 25},
         "vix": {"enabled": True, "strong_at_or_above": 30, "signal_at_or_above": 25},

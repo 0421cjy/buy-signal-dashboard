@@ -66,6 +66,10 @@ def create_app(
     def health():
         return {"status": "ok"}
 
+    @app.get("/api/settings")
+    def settings():
+        return {"auto_refresh_minutes": config.get("auto_refresh_minutes", 0)}
+
     @app.get("/api/market")
     def market(refresh: int = 0):
         get_daily, get_fg, _ = getters(bool(refresh))
