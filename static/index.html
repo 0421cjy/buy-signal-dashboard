@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>매수 기준 체크</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+  <header class="top">
+    <div class="title-row">
+      <h1>매수 기준 체크</h1>
+      <div class="meta">
+        <span id="updated">불러오는 중…</span>
+        <button id="refresh-btn" type="button" class="ghost">새로고침</button>
+      </div>
+    </div>
+    <form id="search-form" autocomplete="off">
+      <input id="ticker-input" placeholder="티커 입력 (AAPL, 005930)" aria-label="티커">
+      <button type="submit">조회</button>
+    </form>
+    <p id="ticker-error" class="error-text" hidden></p>
+    <div id="recent" class="chips"></div>
+  </header>
+
+  <main>
+    <section id="summary" class="summary" aria-live="polite"></section>
+
+    <section>
+      <h2>시장 지표</h2>
+      <div id="market-cards" class="cards"></div>
+    </section>
+
+    <section>
+      <h2 id="ticker-title">종목 지표</h2>
+      <div id="ticker-cards" class="cards">
+        <p class="hint">티커를 검색하면 RSI, MDD(52주 고점 대비), 200일/200주 이동평균을 확인할 수 있습니다.</p>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="detail">
+    <div class="detail-head">
+      <h3 id="detail-title"></h3>
+      <div class="range">
+        <button type="button" data-range="1y" class="active">1년</button>
+        <button type="button" data-range="5y">5년</button>
+      </div>
+      <button type="button" id="detail-close" class="ghost" aria-label="닫기">✕</button>
+    </div>
+    <div class="detail-chart"><canvas id="detail-canvas"></canvas></div>
+  </dialog>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
