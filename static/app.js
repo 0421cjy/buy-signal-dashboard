@@ -9,6 +9,7 @@ const STATUS = {
 };
 const EVALUATED = ["strong_signal", "signal", "neutral"];
 const RECENT_KEY = "buy-signal:recent";
+const RECENT_LIMIT = 15; // 최근 조회 티커 칩 최대 개수
 
 // marketSeq/tickerSeq: 늦게 도착한 이전 요청의 응답이 최신 결과를 덮어쓰지 않게 하는 순번
 const state = { market: [], ticker: [], tickerInfo: null, charts: {}, detail: null, detailResult: null, detailRange: "1y", marketSeq: 0, tickerSeq: 0, lastRefresh: 0 };
@@ -259,7 +260,7 @@ function readRecent() {
 }
 
 function rememberTicker(symbol) {
-  const list = [symbol, ...readRecent().filter((s) => s !== symbol)].slice(0, 5);
+  const list = [symbol, ...readRecent().filter((s) => s !== symbol)].slice(0, RECENT_LIMIT);
   try { localStorage.setItem(RECENT_KEY, JSON.stringify(list)); } catch { /* 저장 불가 환경은 무시 */ }
   renderRecent();
 }
