@@ -26,3 +26,7 @@ def test_fear_greed():
     data = fear_greed.fetch_fear_greed()
     assert 0 <= data["score"] <= 100
     assert len(data["history"]) > 100
+
+
+def test_unknown_ticker_is_empty_not_error():
+    assert prices.fetch_history("ZZZZQXQ").empty

@@ -3,7 +3,7 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from app.data.prices import TickerNotFound, candidate_symbols, clean_close, resolve_symbol
+from app.data.prices import TickerNotFound, candidate_symbols, clean_close, fetch_history, resolve_symbol
 from tests.helpers import series
 
 
@@ -52,3 +52,88 @@ def test_resolve_propagates_network_errors():
 
     with pytest.raises(ConnectionError):
         resolve_symbol("AAPL", boom)
+
+
+# --- fetch_history: yfinance 예외 처리 ------------------------------------
+
+def _frame(values):
+    idx = pd.bdate_range("2026-01-05", periods=len(values))
+    return pd.DataFrame({"Close": values}, index=idx)
+
+
+def test_fetch_history_missing_ticker_returns_empty_without_retry():
+    from yfinance.exceptions import YFTzMissingError
+
+    calls = []
+
+    def download(symbol):
+        calls.append(symbol)
+        raise YFTzMissingError(symbol)
+
+    assert fetch_history("ZZZZ", download=download).empty
+    assert calls == ["ZZZZ"]
+
+
+def test_fetch_history_retries_network_error_once():
+    calls = []
+
+    def download(symbol):
+        calls.append(symbol)
+        if len(calls) == 1:
+            raise ConnectionError("blip")
+        return _frame([1.0, 2.0])
+
+    assert list(fetch_history("AAPL", download=download).values) == [1.0, 2.0]
+    assert len(calls) == 2
+
+
+def test_fetch_history_raises_after_second_network_error():
+    def download(symbol):
+        raise ConnectionError("offline")
+
+    with pytest.raises(ConnectionError):
+        fetch_history("AAPL", download=download)
+
+
+def test_configure_yfinance_stops_hiding_exceptions():
+    import yfinance as yf
+
+    from app.data.prices import configure_yfinance
+
+    yf.config.debug.hide_exceptions = True
+    try:
+        configure_yfinance()
+        assert yf.config.debug.hide_exceptions is False
+    finally:
+        yf.config.debug.hide_exceptions = True
+
+
+def test_fetch_history_http_404_means_not_found():
+    class FakeResponse:
+        status_code = 404
+
+    class FakeHTTPError(Exception):
+        response = FakeResponse()
+
+    calls = []
+
+    def download(symbol):
+        calls.append(symbol)
+        raise FakeHTTPError("HTTP Error 404")
+
+    assert fetch_history("ZZZZ", download=download).empty
+    assert calls == ["ZZZZ"]
+
+
+def test_fetch_history_http_500_is_an_error():
+    class FakeResponse:
+        status_code = 500
+
+    class FakeHTTPError(Exception):
+        response = FakeResponse()
+
+    def download(symbol):
+        raise FakeHTTPError("HTTP Error 500")
+
+    with pytest.raises(FakeHTTPError):
+        fetch_history("AAPL", download=download)
