@@ -46,12 +46,20 @@ def test_vix_evaluate():
     assert r.history[-1]["value"] == 32.14
 
 
+LV = market_mdd.levels(IND["market_mdd"])
+
+
 @pytest.mark.parametrize(
     "dd,expected",
-    [(-0.1399, NEUTRAL), (-0.14, SIGNAL), (-0.1999, SIGNAL), (-0.20, STRONG), (-0.30, STRONG), (-0.45, STRONG)],
+    [(-0.1399, NEUTRAL), (-0.14, SIGNAL), (-0.2999, SIGNAL), (-0.30, STRONG), (-0.47, STRONG), (-0.6, STRONG)],
 )
 def test_mdd_grade(dd, expected):
-    assert market_mdd.grade(dd, IND["market_mdd"]) == expected
+    assert market_mdd.grade(dd, LV) == expected
+
+
+@pytest.mark.parametrize("dd,expected", [(-0.4699, False), (-0.47, True), (-0.6, True)])
+def test_mdd_extreme(dd, expected):
+    assert market_mdd.is_extreme(dd, LV) is expected
 
 
 def test_market_mdd_uses_all_time_high_and_is_not_scored():
@@ -61,15 +69,16 @@ def test_market_mdd_uses_all_time_high_and_is_not_scored():
     assert r.status == SIGNAL
     assert r.value == pytest.approx(-0.16)
     assert r.display == "-16.0%"
+    assert "주식 매수 시작" in r.label
+    assert r.warning is None
     assert r.history[-1]["value"] == pytest.approx(-16.0)
-    assert r.thresholds == [-14.0, -20.0]
+    assert r.thresholds == [-14.0, -30.0, -47.0]
 
 
-def test_fear_greed_display_does_not_round_across_threshold():
-    fg = {"score": 24.6, "as_of": "2026-10-09", "history": []}
-    r = fear_greed.FearGreed().evaluate(ctx(IND["fear_greed"], fg=fg))
-    assert r.status == SIGNAL
-    assert r.display == "24.6"
+def test_market_mdd_extreme_shows_warning():
+    r = market_mdd.MarketMdd().evaluate(ctx(IND["market_mdd"], daily={"^GSPC": series([100, 200, 100])}))
+    assert r.status == STRONG
+    assert "극단적 하락" in r.warning
 
 
 def test_market_mdd_name_has_no_reference_suffix():

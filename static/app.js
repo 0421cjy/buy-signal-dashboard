@@ -117,7 +117,7 @@ function helpButton(text) {
 
 function buildCard(r, containerId, onRetry) {
   const st = STATUS[r.status] || STATUS.neutral;
-  const card = el("article", `card ${st.cls}`);
+  const card = el("article", `card ${st.cls}${r.warning ? " extreme" : ""}`);
 
   const head = el("div", "card-head");
   const title = el("h3", null, r.name);
@@ -130,6 +130,7 @@ function buildCard(r, containerId, onRetry) {
 
   card.append(el("div", "value", r.display || "—"));
   if (r.label) card.append(el("div", "label", r.label));
+  if (r.warning) card.append(el("div", "warning", r.warning));
 
   if (r.status === "error") {
     card.append(el("div", "small", r.error || ""));

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pandas as pd
 import pytest
 
 from app.config import DEFAULT_CONFIG
@@ -66,22 +67,67 @@ def test_rsi_insufficient_data():
     assert r.status == INSUFFICIENT
 
 
-# --- 종목 MDD (52주) ----------------------------------------------------
+# --- 종목 MDD: 올해 고점 대비, 종목 연평균 하락률로 구간 조정 ----------
 
-def test_ticker_mdd_uses_52_week_high_not_all_time_high():
-    values = [200] * 50 + [100] * 300 + [85]  # 사상 최고 200, 최근 252일 최고 100
-    r = mdd.Mdd().evaluate(ctx(IND["mdd"], series(values)))
+def year_block(year, dd, start_price=100.0):
+    """한 해 동안 start_price에서 시작해 후반에 dd만큼 떨어지는 일봉."""
+    idx = pd.bdate_range(f"{year}-01-01", f"{year}-12-31")
+    half = len(idx) // 2
+    return pd.Series([start_price] * half + [start_price * (1 + dd)] * (len(idx) - half), index=idx)
+
+
+def history(annual, current_values, current_year=2023):
+    blocks = [year_block(2020 + i, dd) for i, dd in enumerate(annual)]
+    idx = pd.bdate_range(f"{current_year}-01-01", periods=len(current_values))
+    blocks.append(pd.Series([float(v) for v in current_values], index=idx))
+    return pd.concat(blocks)
+
+
+def test_annual_max_drawdowns_excludes_current_and_short_years():
+    short = pd.Series([100.0, 50.0], index=pd.bdate_range("2019-12-30", periods=2))  # 2019년 2일뿐
+    s = pd.concat([short, history([-0.2, -0.1, -0.3], [100, 90])])
+    years = mdd.annual_max_drawdowns(s, min_days=200)
+    assert list(years.index) == [2020, 2021, 2022]
+    assert list(years.round(4)) == [-0.2, -0.1, -0.3]
+
+
+def test_ytd_drawdown_resets_each_year():
+    s = pd.concat([year_block(2022, -0.5), pd.Series([60.0, 57.0], index=pd.bdate_range("2023-01-02", periods=2))])
+    assert mdd.ytd_drawdown(s).iloc[-1] == pytest.approx(-0.05)
+
+
+def test_ticker_mdd_scales_levels_by_stock_average():
+    # 연평균 -20% → 배율 20/14: 신호 -20%, 강한 신호 약 -42.9%, 극단 약 -67.1%
+    r = mdd.Mdd().evaluate(ctx(IND["mdd"], history([-0.2, -0.1, -0.3], [100, 75])))
     assert r.scored is True
-    assert r.value == pytest.approx(-0.15)
-    assert r.status == SIGNAL
-    assert r.details["사상 최고가 대비"] == "-57.5%"
-    assert r.thresholds == [-14.0, -20.0]
-
-
-def test_ticker_mdd_short_history_uses_available_high():
-    r = mdd.Mdd().evaluate(ctx(IND["mdd"], series([100, 120, 90])))
     assert r.value == pytest.approx(-0.25)
+    assert r.status == SIGNAL
+    assert r.thresholds == pytest.approx([-20.0, -42.8571, -67.1429], abs=1e-3)
+    assert r.details["연평균 최대 하락률"] == "-20.0% (3년)"
+
+
+def test_ticker_mdd_above_scaled_level_is_neutral():
+    r = mdd.Mdd().evaluate(ctx(IND["mdd"], history([-0.2, -0.1, -0.3], [100, 85])))  # -15% > -20%
+    assert r.status == NEUTRAL
+
+
+def test_ticker_mdd_short_history_uses_default_levels():
+    r = mdd.Mdd().evaluate(ctx(IND["mdd"], history([-0.4, -0.4], [100, 85])))  # 끝난 해 2년뿐
+    assert r.status == SIGNAL  # 기본 -14% 기준
+    assert r.thresholds == [-14.0, -30.0, -47.0]
+    assert "기본 기준" in r.details["연평균 최대 하락률"]
+
+
+def test_ticker_mdd_extreme_warning():
+    r = mdd.Mdd().evaluate(ctx(IND["mdd"], history([-0.14, -0.14, -0.14], [100, 50])))
     assert r.status == STRONG
+    assert "극단적 하락" in r.warning
+
+
+def test_ticker_mdd_reference_details():
+    r = mdd.Mdd().evaluate(ctx(IND["mdd"], history([-0.2, -0.1, -0.3], [100, 75])))
+    assert "52주 고점 대비" in r.details
+    assert "사상 최고가 대비" in r.details
 
 
 # --- 이동평균: 200일·200주 중 이탈 개수 ------------------------------

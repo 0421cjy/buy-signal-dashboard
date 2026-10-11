@@ -120,17 +120,14 @@ IndicatorResult:
 - details: 일봉 RSI·주봉 RSI 값과 해당 여부. 차트: 일봉 RSI, 주봉 RSI 겹쳐 그림, 임계선 30·35
 
 ### 5.4 MDD — ticker (판정) + S&P 500 (참고)
+- 공통 구간과 행동: `≤ −14%` signal(헷지 자산 일부 매도 → 주식 매수 시작) / `≤ −30%` strong_signal(헷지 자산 추가 매도 → 비중 확대) / `≤ −47%` strong_signal + 경고 문구 "⚠ 극단적 하락 구간입니다"(`warning` 필드)
 - **종목 MDD (`mdd`, scope ticker, scored)**
-  - 데이터: 입력 종목의 일봉 종가 (최근 52주 = 252거래일, 차트용으로 5년 조회)
-  - 계산: `현재 종가 / 최근 52주(252거래일) 최고 종가 − 1`
-  - 판정:
-    - `value > −14%` → neutral (대기)
-    - `−20% < value ≤ −14%` → signal (매수 시작)
-    - `value ≤ −20%` → strong_signal (비중 대폭 확대)
-  - details: 사상 최고 종가 대비 하락률(참고, 조회 가능한 전체 이력 기준)
+  - 현재 하락률: `현재 종가 / 올해 최고 종가 − 1`
+  - 배율: 끝난 해별 연중 최대 하락률(그해 최고점 대비)의 평균 ÷ `base_average`(−14%). 거래일 200일 미만인 해와 올해는 제외. 끝난 해가 3년 미만이면 배율 1
+  - 구간 = 공통 구간 × 배율
+  - details: 연평균 최대 하락률(년수), 52주 고점 대비, 사상 최고가 대비
 - **S&P 500 MDD (`market_mdd`, scope market, 참고용 `scored: false`)**
-  - 데이터: Yahoo `^GSPC` 전체 이력 일봉 종가, 계산: `현재 종가 / 전체 이력 최고 종가 − 1` (사상 최고가 기준)
-  - 같은 구간 규칙으로 배지를 표시하지만 종합 점수에는 넣지 않는다. 카드에 "참고" 표시를 붙인다.
+  - `현재 종가 / 전체 이력 최고 종가 − 1`, 공통 구간을 배율 없이 적용
 
 ### 5.5 200일 / 200주 이동평균 — ticker
 - 계산: 200일 SMA(일봉 종가), 200주 SMA(주봉 종가, 주 마지막 거래일 기준). 이격도 = `현재가 / SMA − 1`
@@ -195,8 +192,8 @@ cache_ttl_seconds: 600
 indicators:
   fear_greed: { enabled: true, strong_below: 20, signal_below: 25 }
   vix:        { enabled: true, strong_at_or_above: 30, signal_at_or_above: 25 }
-  mdd:        { enabled: true, lookback_days: 252, signal_at_or_below: -0.14, strong_at_or_below: -0.20 }
-  market_mdd: { enabled: true, index: "^GSPC", signal_at_or_below: -0.14, strong_at_or_below: -0.20 }
+  mdd:        { enabled: true, base_average: -0.14, signal_at_or_below: -0.14, strong_at_or_below: -0.30, extreme_at_or_below: -0.47, min_years: 3, min_days_per_year: 200 }
+  market_mdd: { enabled: true, index: "^GSPC", signal_at_or_below: -0.14, strong_at_or_below: -0.30, extreme_at_or_below: -0.47 }
   rsi:        { enabled: true, period: 14, daily_at_or_below: 30, weekly_at_or_below: 35 }
   moving_average: { enabled: true, daily_window: 200, weekly_window: 200 }
 ```

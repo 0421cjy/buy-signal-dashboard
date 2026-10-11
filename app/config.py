@@ -14,9 +14,16 @@ DEFAULT_CONFIG: dict = {
     "indicators": {
         "fear_greed": {"enabled": True, "strong_below": 20, "signal_below": 25},
         "vix": {"enabled": True, "strong_at_or_above": 30, "signal_at_or_above": 25},
-        "market_mdd": {"enabled": True, "index": "^GSPC", "signal_at_or_below": -0.14, "strong_at_or_below": -0.20},
+        "market_mdd": {
+            "enabled": True, "index": "^GSPC",
+            "signal_at_or_below": -0.14, "strong_at_or_below": -0.30, "extreme_at_or_below": -0.47,
+        },
         "rsi": {"enabled": True, "period": 14, "daily_at_or_below": 30, "weekly_at_or_below": 35},
-        "mdd": {"enabled": True, "lookback_days": 252, "signal_at_or_below": -0.14, "strong_at_or_below": -0.20},
+        "mdd": {
+            "enabled": True, "base_average": -0.14,
+            "signal_at_or_below": -0.14, "strong_at_or_below": -0.30, "extreme_at_or_below": -0.47,
+            "min_years": 3, "min_days_per_year": 200,
+        },
         "moving_average": {"enabled": True, "daily_window": 200, "weekly_window": 200},
     },
 }
