@@ -70,3 +70,7 @@ def test_fear_greed_display_does_not_round_across_threshold():
     r = fear_greed.FearGreed().evaluate(ctx(IND["fear_greed"], fg=fg))
     assert r.status == SIGNAL
     assert r.display == "24.6"
+
+
+def test_market_mdd_name_has_no_reference_suffix():
+    assert market_mdd.MarketMdd.name == "S&P 500 MDD"

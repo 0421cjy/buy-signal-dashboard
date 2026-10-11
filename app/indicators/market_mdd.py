@@ -29,7 +29,7 @@ def threshold_lines(cfg: dict) -> list:
 @register
 class MarketMdd(Indicator):
     id = "market_mdd"
-    name = "S&P 500 MDD (참고)"
+    name = "S&P 500 MDD"
     scope = "market"
     scored = False
     order = 30
