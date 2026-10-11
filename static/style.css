@@ -81,6 +81,20 @@ button.ghost { background: transparent; color: var(--text); border-color: var(--
 .card.error { border-left-color: var(--error); }
 .card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .card-head h3 { margin: 0; font-size: 0.95rem; font-weight: 600; }
+.card-side { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.help { position: relative; display: inline-flex; }
+.help-btn {
+  width: 20px; height: 20px; padding: 0; border-radius: 50%; font-size: 0.75rem; font-weight: 700; line-height: 1;
+  background: transparent; color: var(--muted); border: 1px solid var(--border); cursor: help;
+}
+.help-btn:hover, .help-btn:focus-visible { color: var(--text); border-color: var(--muted); }
+.help-tip {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 10; width: max-content; max-width: 260px;
+  padding: 8px 10px; border-radius: 8px; font-size: 0.8rem; font-weight: 400; line-height: 1.45;
+  background: var(--text); color: var(--bg); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  visibility: hidden; opacity: 0; transition: opacity 0.12s; pointer-events: none;
+}
+.help:hover .help-tip, .help:focus-within .help-tip { visibility: visible; opacity: 1; }
 .badge { font-size: 0.78rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
 .badge.strong { color: var(--strong); background: var(--strong-bg); }
 .badge.signal { color: var(--signal); background: var(--signal-bg); }

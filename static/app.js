@@ -103,6 +103,18 @@ function destroyCharts(containerId) {
   state.charts[containerId] = [];
 }
 
+function helpButton(text) {
+  const wrap = el("span", "help");
+  const btn = el("button", "help-btn", "?");
+  btn.type = "button";
+  btn.setAttribute("aria-label", `판단 기준: ${text}`);
+  btn.addEventListener("click", (e) => e.stopPropagation());
+  const tip = el("span", "help-tip", `기준: ${text}`);
+  tip.setAttribute("role", "tooltip");
+  wrap.append(btn, tip);
+  return wrap;
+}
+
 function buildCard(r, containerId, onRetry) {
   const st = STATUS[r.status] || STATUS.neutral;
   const card = el("article", `card ${st.cls}`);
@@ -110,7 +122,10 @@ function buildCard(r, containerId, onRetry) {
   const head = el("div", "card-head");
   const title = el("h3", null, r.name);
   if (!r.scored) title.append(el("span", "tag", "참고 · 점수 제외"));
-  head.append(title, el("span", `badge ${st.cls}`, st.text));
+  const side = el("div", "card-side");
+  if (r.threshold) side.append(helpButton(r.threshold));
+  side.append(el("span", `badge ${st.cls}`, st.text));
+  head.append(title, side);
   card.append(head);
 
   card.append(el("div", "value", r.display || "—"));
@@ -131,7 +146,6 @@ function buildCard(r, containerId, onRetry) {
     entries.forEach(([k, v]) => dl.append(el("dt", null, k), el("dd", null, v)));
     card.append(dl);
   }
-  if (r.threshold) card.append(el("div", "small", `기준: ${r.threshold}`));
   if (r.as_of) card.append(el("div", "small", `데이터 기준일 ${r.as_of}`));
 
   if ((r.history || []).length && window.Chart) {
