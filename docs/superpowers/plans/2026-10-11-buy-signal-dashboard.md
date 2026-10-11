@@ -15,7 +15,7 @@
 - Python 3.9 호환: 모든 모듈 첫 줄에 `from __future__ import annotations`를 넣는다. 런타임에 평가되는 위치에서 `X | None`, `list[int]` 문법을 쓰지 않는다(`typing.Optional`, `List` 사용).
 - 판정 상태 문자열: `strong_signal`, `signal`, `neutral`, `error`, `insufficient_data`
 - 종합 점수: `scored: true`인 지표만 센다. 충족 = `signal` 또는 `strong_signal`. `error`/`insufficient_data`는 분모에서 빼고 실패 수로 따로 표시한다.
-- 기본 임계값(config.yaml): 공포·탐욕 `<20` strong / `<25` signal, VIX `≥30` strong / `≥25` signal, RSI(14) `≤30` strong / `≤35` signal, 종목 MDD(52주=252거래일 최고 종가 대비) `≤−14%` signal / `≤−20%` strong, 이평 이격도 `<0` signal / `≤−5%` strong(200일·200주 중 더 강한 상태), S&P 500 MDD(사상 최고가 대비)는 참고용(`scored: false`)
+- 기본 임계값(config.yaml): 공포·탐욕 `<20` strong / `<25` signal, VIX `≥30` strong / `≥25` signal, RSI(14) 일봉 `≤30`·주봉 `≤35` 중 하나 해당 signal / 둘 다 해당 strong, 종목 MDD(52주=252거래일 최고 종가 대비) `≤−14%` signal / `≤−20%` strong, 이평 이격도 `<0` signal / `≤−5%` strong(200일·200주 중 더 강한 상태), S&P 500 MDD(사상 최고가 대비)는 참고용(`scored: false`)
 - 서버는 `127.0.0.1:8000`에만 바인딩한다. 캐시 TTL 기본값은 600초다.
 - 외부 요청: 타임아웃 10초, 실패 시 1회 재시도
 - 사용자에게 보이는 문구는 한국어로 쓴다. `run.bat`의 출력 문구는 인코딩 문제를 피하려고 영어로 쓴다.
@@ -113,7 +113,7 @@ indicators:
   fear_greed:     { enabled: true, strong_below: 20, signal_below: 25 }
   vix:            { enabled: true, strong_at_or_above: 30, signal_at_or_above: 25 }
   market_mdd:     { enabled: true, index: "^GSPC", signal_at_or_below: -0.14, strong_at_or_below: -0.20 }
-  rsi:            { enabled: true, period: 14, strong_at_or_below: 30, signal_at_or_below: 35 }
+  rsi:            { enabled: true, period: 14, daily_at_or_below: 30, weekly_at_or_below: 35 }
   mdd:            { enabled: true, lookback_days: 252, signal_at_or_below: -0.14, strong_at_or_below: -0.20 }
   moving_average: { enabled: true, daily_window: 200, weekly_window: 200, strong_gap_at_or_below: -0.05 }
 ```
@@ -198,7 +198,7 @@ DEFAULT_CONFIG: dict = {
         "fear_greed": {"enabled": True, "strong_below": 20, "signal_below": 25},
         "vix": {"enabled": True, "strong_at_or_above": 30, "signal_at_or_above": 25},
         "market_mdd": {"enabled": True, "index": "^GSPC", "signal_at_or_below": -0.14, "strong_at_or_below": -0.20},
-        "rsi": {"enabled": True, "period": 14, "strong_at_or_below": 30, "signal_at_or_below": 35},
+        "rsi": {"enabled": True, "period": 14, "daily_at_or_below": 30, "weekly_at_or_below": 35},
         "mdd": {"enabled": True, "lookback_days": 252, "signal_at_or_below": -0.14, "strong_at_or_below": -0.20},
         "moving_average": {"enabled": True, "daily_window": 200, "weekly_window": 200, "strong_gap_at_or_below": -0.05},
     },
@@ -928,7 +928,7 @@ git commit -m "feat: 시장 지표 (공포·탐욕, VIX, S&P 500 MDD 참고)"
 **Interfaces:**
 - Consumes: Task 3의 base, Task 4의 `market_mdd.grade`, `market_mdd.LABELS`, `market_mdd.threshold_text`, `market_mdd.threshold_lines`
 - Consumes: `ctx.symbol`은 이미 정규화된 심볼이고, `ctx.get_daily(symbol)`은 전체 이력 일봉 종가다.
-- Produces: 지표 id `rsi`(order 40), `mdd`(50), `moving_average`(60). 함수 `rsi.wilder_rsi(s: pd.Series, period: int) -> pd.Series`, `rsi.grade(value, cfg)`, `moving_average.grade_gap(gap: float, cfg) -> str`, `moving_average.to_weekly(s) -> pd.Series`(W-FRI 마지막 값)
+- Produces: 지표 id `rsi`(order 40), `mdd`(50), `moving_average`(60). 함수 `rsi.wilder_rsi(s: pd.Series, period: int) -> pd.Series`, `rsi.grade(daily: float, weekly: Optional[float], cfg) -> str`, `moving_average.grade_gap(gap: float, cfg) -> str`, `moving_average.to_weekly(s) -> pd.Series`(W-FRI 마지막 값)
 
 - [ ] **Step 1: 실패하는 테스트** — `tests/test_ticker_indicators.py`
 
@@ -963,17 +963,37 @@ def test_wilder_rsi_balanced_is_50():
     assert rsi.wilder_rsi(series(values), 14).iloc[-1] == pytest.approx(50.0, abs=2.0)
 
 
-@pytest.mark.parametrize("value,expected", [(30, STRONG), (30.1, SIGNAL), (35, SIGNAL), (35.1, NEUTRAL)])
-def test_rsi_grade(value, expected):
-    assert rsi.grade(value, IND["rsi"]) == expected
+@pytest.mark.parametrize(
+    "daily,weekly,expected",
+    [(30, 35, STRONG), (30, 35.1, SIGNAL), (30.1, 35, SIGNAL), (30.1, 35.1, NEUTRAL), (25, None, SIGNAL), (31, None, NEUTRAL)],
+)
+def test_rsi_grade(daily, weekly, expected):
+    assert rsi.grade(daily, weekly, IND["rsi"]) == expected
 
 
-def test_rsi_evaluate_oversold_with_weekly_detail():
-    s = series(list(range(300, 100, -1)))
+def test_rsi_evaluate_both_oversold_is_strong():
+    s = series(list(range(300, 100, -1)))  # 200거래일 하락 → 일봉·주봉 모두 0 근처
     r = rsi.Rsi().evaluate(ctx(IND["rsi"], s))
     assert r.status == STRONG
+    assert r.details["일봉 RSI(14)"].endswith("(해당)")
+    assert r.details["주봉 RSI(14)"].endswith("(해당)")
     assert r.thresholds == [30, 35]
-    assert "주봉 RSI(14)" in r.details
+    assert "주봉 RSI" in r.overlays
+
+
+def test_rsi_evaluate_only_weekly_oversold_is_signal():
+    s = series(list(range(300, 100, -1)) + [103, 106, 109, 112, 115])  # 긴 하락 후 5일 반등
+    r = rsi.Rsi().evaluate(ctx(IND["rsi"], s))
+    assert r.details["일봉 RSI(14)"].endswith("(미해당)")
+    assert r.details["주봉 RSI(14)"].endswith("(해당)")
+    assert r.status == SIGNAL
+
+
+def test_rsi_weekly_insufficient_uses_daily_only():
+    s = series(list(range(100, 60, -1)))  # 40거래일 = 약 8주, 주봉 RSI 계산 불가
+    r = rsi.Rsi().evaluate(ctx(IND["rsi"], s))
+    assert r.details["주봉 RSI(14)"] == "데이터 부족"
+    assert r.status == SIGNAL
 
 
 def test_rsi_insufficient_data():
@@ -1058,6 +1078,8 @@ Expected: FAIL (`ImportError`)
 ```python
 from __future__ import annotations
 
+from typing import Optional
+
 import pandas as pd
 
 from app.indicators.base import (
@@ -1065,7 +1087,7 @@ from app.indicators.base import (
 )
 from app.indicators.moving_average import to_weekly
 
-_LABELS = {STRONG: "과매도", SIGNAL: "과매도 근접", NEUTRAL: "과매도 아님"}
+_LABELS = {STRONG: "일봉·주봉 모두 과매도", SIGNAL: "일봉·주봉 중 하나 과매도", NEUTRAL: "과매도 아님"}
 
 
 def wilder_rsi(s: pd.Series, period: int) -> pd.Series:
@@ -1082,42 +1104,58 @@ def wilder_rsi(s: pd.Series, period: int) -> pd.Series:
     return out.where(avg_gain.notna())
 
 
-def grade(value: float, cfg: dict) -> str:
-    if value <= cfg["strong_at_or_below"]:
+def grade(daily: float, weekly: Optional[float], cfg: dict) -> str:
+    hits = int(daily <= cfg["daily_at_or_below"])
+    if weekly is not None:
+        hits += int(weekly <= cfg["weekly_at_or_below"])
+    if hits == 2:
         return STRONG
-    if value <= cfg["signal_at_or_below"]:
+    if hits == 1:
         return SIGNAL
     return NEUTRAL
+
+
+def _mark(value: float, limit: float) -> str:
+    return f"{value:.1f} ({'해당' if value <= limit else '미해당'})"
 
 
 @register
 class Rsi(Indicator):
     id = "rsi"
-    name = "RSI (14)"
+    name = "RSI (14, 일봉·주봉)"
     scope = "ticker"
     order = 40
 
     def evaluate(self, ctx: EvalContext) -> IndicatorResult:
         cfg = ctx.config
         period = int(cfg["period"])
+        d_limit, w_limit = cfg["daily_at_or_below"], cfg["weekly_at_or_below"]
         s = ctx.get_daily(ctx.symbol).dropna()
         if len(s) <= period + 1:
             return self.insufficient(f"RSI 계산에 {period + 2}거래일 이상 필요합니다")
-        series = wilder_rsi(s, period).dropna()
-        value = float(series.iloc[-1])
-        status = grade(value, cfg)
+
+        daily = wilder_rsi(s, period).dropna()
+        d = float(daily.iloc[-1])
         weekly = wilder_rsi(to_weekly(s), period).dropna()
-        details = {f"주봉 RSI({period})": f"{weekly.iloc[-1]:.1f}" if not weekly.empty else "데이터 부족"}
+        w = float(weekly.iloc[-1]) if not weekly.empty else None
+        status = grade(d, w, cfg)
+
+        details = {
+            f"일봉 RSI({period})": _mark(d, d_limit),
+            f"주봉 RSI({period})": _mark(w, w_limit) if w is not None else "데이터 부족",
+        }
+        overlays = {"주봉 RSI": to_points(weekly.reindex(daily.index, method="ffill"))} if w is not None else {}
         return self.make(
             status=status,
-            value=value,
-            display=f"{value:.1f}",
+            value=d,
+            display=f"일 {d:.1f} · 주 {w:.1f}" if w is not None else f"일 {d:.1f}",
             label=_LABELS[status],
-            threshold=f"{cfg['strong_at_or_below']} 이하 강한 신호 · {cfg['signal_at_or_below']} 이하 신호",
+            threshold=f"일봉 {d_limit} 이하 · 주봉 {w_limit} 이하 — 하나 해당 신호, 둘 다 해당 강한 신호",
             as_of=as_of(s),
             details=details,
-            history=to_points(series),
-            thresholds=[cfg["strong_at_or_below"], cfg["signal_at_or_below"]],
+            history=to_points(daily),
+            overlays=overlays,
+            thresholds=[d_limit, w_limit],
         )
 ```
 
@@ -2358,7 +2396,7 @@ Run: `git update-index --add --chmod=+x run.sh` (Step 7의 커밋 직전에 실�
 |---|---|---|---|---|
 | 1 | 공포·탐욕 지수 (CNN) | 25 미만 | 20 미만 | 시장 |
 | 2 | VIX | 25 이상 | 30 이상 | 시장 |
-| 3 | RSI(14, 일봉) | 35 이하 | 30 이하 | 종목 |
+| 3 | RSI(14) — 일봉 30 이하 / 주봉 35 이하 | 하나 해당 | 둘 다 해당 | 종목 |
 | 4 | MDD (52주 최고 종가 대비) | −14% 이하 | −20% 이하 | 종목 |
 | 5 | 200일 / 200주 이동평균 | 이평선 아래 | 이평선 아래로 5% 이상 이탈 | 종목 |
 

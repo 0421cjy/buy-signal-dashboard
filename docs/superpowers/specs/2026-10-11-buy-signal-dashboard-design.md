@@ -113,9 +113,11 @@ IndicatorResult:
 - 판정: `value ≥ 30` → strong_signal(패닉) / `25 ≤ value < 30` → signal(불안) / 그 외 neutral
 
 ### 5.3 RSI — ticker
-- 계산: 일봉 종가 14일, Wilder 평활(`alpha = 1/14` 지수평활, TradingView와 동일 방식)
-- 판정: `value ≤ 30` → strong_signal(과매도) / `30 < value ≤ 35` → signal(과매도 근접) / 그 외 neutral
-- details: 주봉 RSI(14), 참고용
+- 계산: 일봉 종가와 주봉 종가(W-FRI 마지막 값) 각각 14기간, Wilder 평활(`alpha = 1/14` 지수평활, TradingView와 동일 방식)
+- 조건: 일봉 RSI `≤ 30`, 주봉 RSI `≤ 35`
+- 판정: 두 조건 모두 해당 → strong_signal / 하나만 해당 → signal / 둘 다 미해당 → neutral
+- 주봉 데이터가 부족하면 주봉은 "데이터 부족"으로 표시하고 일봉 조건만으로 판정한다(최대 signal).
+- details: 일봉 RSI·주봉 RSI 값과 해당 여부. 차트: 일봉 RSI, 주봉 RSI 겹쳐 그림, 임계선 30·35
 
 ### 5.4 MDD — ticker (판정) + S&P 500 (참고)
 - **종목 MDD (`mdd`, scope ticker, scored)**
@@ -172,7 +174,7 @@ IndicatorResult:
 - 상단: 제목, 티커 입력창 + 조회 버튼, 최근 조회 티커 칩(최대 5개, localStorage), 마지막 갱신 시각, 새로고침 버튼
 - 종합 바: 충족 개수 점(●○), "n / m 충족 (강한 신호 k)"
 - 시장 지표 섹션: 공포·탐욕, VIX 카드와 S&P 500 MDD 참고 카드("참고" 표시, 점수 제외). 페이지를 열면 바로 조회한다.
-- 종목 지표 섹션: 검색 전에는 안내 문구만 보인다. 검색하면 RSI, 종목 MDD, 200일/200주 이평 카드와 참고 정보(주봉 RSI, 사상 최고가 대비 하락률)를 표시한다.
+- 종목 지표 섹션: 검색 전에는 안내 문구만 보인다. 검색하면 RSI, 종목 MDD, 200일/200주 이평 카드와 참고 정보(사상 최고가 대비 하락률)를 표시한다.
 - 카드 내용: 지표명, 현재 값, 상태 배지(색상 + 텍스트), 한 줄 설명, 판단 기준, 데이터 기준일, 최근 1년 미니 차트(임계선은 점선)
 - 카드를 클릭하면 상세 차트 모달이 열린다(1년/5년 전환). 이동평균 카드는 가격·200일선·200주선을 함께 그린다.
 - 다크/라이트 모드는 `prefers-color-scheme`을 따른다. 모바일 폭에서는 카드를 1열로 배치한다.
@@ -199,7 +201,7 @@ indicators:
   vix:        { enabled: true, strong_at_or_above: 30, signal_at_or_above: 25 }
   mdd:        { enabled: true, lookback_days: 252, signal_at_or_below: -0.14, strong_at_or_below: -0.20 }
   market_mdd: { enabled: true, index: "^GSPC", signal_at_or_below: -0.14, strong_at_or_below: -0.20 }
-  rsi:        { enabled: true, period: 14, strong_at_or_below: 30, signal_at_or_below: 35 }
+  rsi:        { enabled: true, period: 14, daily_at_or_below: 30, weekly_at_or_below: 35 }
   moving_average: { enabled: true, daily_window: 200, weekly_window: 200, strong_gap_at_or_below: -0.05 }
 ```
 
@@ -208,7 +210,7 @@ indicators:
 ## 11. 테스트
 
 - **지표 단위 테스트**(네트워크 없음, 고정 시계열)
-  - RSI: 알려진 입력의 Wilder RSI 값, 경계값 30·35
+  - RSI: 알려진 입력의 Wilder RSI 값, 일봉 30·주봉 35 경계값과 조합 4가지, 주봉 데이터 부족
   - MDD: 경계값 −14%, −20%, −30%, S&P 500 MDD가 종합 점수에서 제외되는지
   - 이동평균: 이격도 경계값 0%, −4.9%, −5%, 200일·200주 조합 시 더 강한 상태 선택, 200주 데이터 부족, 200일 데이터 부족
   - 공포·탐욕: 19.9 / 20 / 24.9 / 25, VIX: 24.9 / 25 / 29.9 / 30
