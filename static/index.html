@@ -18,7 +18,11 @@
       </div>
     </div>
     <form id="search-form" autocomplete="off">
-      <input id="ticker-input" placeholder="티커 입력 (AAPL, 005930)" aria-label="티커">
+      <div class="search-box">
+        <input id="ticker-input" placeholder="티커 또는 종목명 (AAPL, 005930, 삼성전자)" aria-label="티커"
+               role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="suggest-list">
+        <ul id="suggest-list" class="suggest" role="listbox" hidden></ul>
+      </div>
       <button type="submit">조회</button>
     </form>
     <p id="ticker-error" class="error-text" hidden></p>
@@ -53,6 +57,7 @@
     <div class="detail-chart"><canvas id="detail-canvas"></canvas></div>
   </dialog>
 
+  <script src="/static/suggest.js"></script>
   <script src="/static/app.js"></script>
 </body>
 </html>

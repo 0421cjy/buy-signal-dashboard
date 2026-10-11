@@ -313,6 +313,10 @@ function startAutoRefresh(minutes) {
 
 function init() {
   $("search-form").addEventListener("submit", (e) => { e.preventDefault(); loadTicker($("ticker-input").value); });
+  fetch("/static/tickers.json")
+    .then((res) => res.json())
+    .then((items) => attachSuggest($("ticker-input"), $("suggest-list"), items, (symbol) => loadTicker(symbol)))
+    .catch(() => {}); // 목록을 못 불러와도 직접 입력 조회는 그대로 동작
   $("refresh-btn").addEventListener("click", refreshAll);
   $("detail-close").addEventListener("click", () => $("detail").close());
   $("detail").addEventListener("click", (e) => { if (e.target === $("detail")) $("detail").close(); });
