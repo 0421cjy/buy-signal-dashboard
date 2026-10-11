@@ -2,6 +2,8 @@
 
 5가지 매수 기준을 한 화면에서 확인하는 로컬 웹 대시보드입니다.
 
+> **바로 시작하기**: Python 3.9+ 설치 → 저장소 ZIP 내려받기 → `run.bat`(Windows) 또는 `bash run.sh`(macOS/Linux) 실행. 자세한 방법은 [설치 및 실행](#설치-및-실행)을 보세요.
+
 | # | 기준 | 신호 🟡 | 강한 신호 🟢 | 대상 |
 |---|---|---|---|---|
 | 1 | 공포·탐욕 지수 (CNN) | 25 미만 | 20 미만 | 시장 |
@@ -114,14 +116,82 @@
 - 조회 실패나 데이터 부족인 기준은 분모에서 빼고 `n개 조회 실패`로 따로 표시합니다.
 - 각 카드의 `?` 버튼에 마우스를 올리면 그 카드의 판단 기준을 볼 수 있습니다.
 
-## 실행
+## 설치 및 실행
 
-Python 3.9 이상이 필요합니다.
+처음 한 번만 **① Python 설치 → ② 내려받기**를 하면, 그다음부터는 **③ 실행 파일 더블클릭**만 하면 됩니다.
 
-- **Windows**: `run.bat` 더블클릭
-- **macOS / Linux**: `./run.sh`
+### ① Python 설치 (3.9 이상)
 
-처음 실행할 때 `.venv` 가상환경을 만들고 패키지를 설치한 뒤, 브라우저에서 `http://127.0.0.1:8000`을 엽니다.
+이미 설치되어 있는지 먼저 확인하세요. 터미널(Windows는 명령 프롬프트 또는 PowerShell)에서:
+
+```bash
+python --version
+```
+
+`Python 3.9` 이상이 나오면 ②로 넘어가면 됩니다. macOS / Linux는 `python3 --version`으로 확인하세요.
+
+| OS | 설치 방법 |
+|---|---|
+| **Windows** | [python.org/downloads](https://www.python.org/downloads/)에서 설치 파일을 받아 실행합니다. 첫 화면 아래의 **"Add python.exe to PATH"를 꼭 체크**하세요. 또는 터미널에서 `winget install Python.Python.3.12` |
+| **macOS** | [python.org/downloads](https://www.python.org/downloads/) 설치 파일, 또는 Homebrew를 쓰면 `brew install python` |
+| **Ubuntu / Debian** | `sudo apt install python3 python3-venv` (가상환경을 만드는 `python3-venv`도 함께 설치해야 합니다) |
+
+### ② 내려받기
+
+둘 중 편한 방법을 고르세요.
+
+- **ZIP으로 받기 (git 몰라도 됨)**: [GitHub 저장소](https://github.com/0421cjy/buy-signal-dashboard)에서 초록색 **Code → Download ZIP**을 누르고, 받은 파일의 압축을 원하는 폴더에 풉니다.
+- **git으로 받기**:
+
+  ```bash
+  git clone https://github.com/0421cjy/buy-signal-dashboard.git
+  ```
+
+### ③ 실행
+
+| OS | 실행 방법 |
+|---|---|
+| **Windows** | 압축을 푼 폴더에서 `run.bat`을 **더블클릭** |
+| **macOS / Linux** | 터미널에서 폴더로 이동한 뒤 `bash run.sh` |
+
+실행 파일이 알아서 다음을 처리합니다.
+
+1. 프로젝트 폴더 안에 전용 가상환경(`.venv` 폴더)을 만듭니다. 컴퓨터의 다른 Python 환경에는 영향을 주지 않습니다.
+2. 필요한 패키지(`requirements.txt`)를 설치합니다. **처음 실행할 때만 1~3분 정도** 걸리고, 다음부터는 몇 초면 됩니다.
+3. 서버를 켜고 브라우저에서 `http://127.0.0.1:8000`을 엽니다.
+
+- **종료**: 실행 창에서 `Ctrl + C`를 누르거나 창을 닫으면 됩니다.
+- **다시 실행**: 같은 실행 파일을 다시 더블클릭하면 됩니다.
+- 서버는 내 컴퓨터(`127.0.0.1`)에서만 접속할 수 있고, 외부에 공개되지 않습니다.
+
+### 업데이트
+
+- **ZIP으로 받은 경우**: 새 ZIP을 받아 압축을 풀고 실행합니다. `config.yaml`을 고쳐 썼다면 새 폴더에 옮겨 주세요.
+- **git으로 받은 경우**: 폴더에서 `git pull` 후 실행합니다.
+
+실행 파일이 매번 패키지를 확인하므로 새로 필요한 패키지도 자동으로 설치됩니다.
+
+### 문제 해결
+
+| 증상 | 해결 |
+|---|---|
+| `Python 3.9+ is required` / `python을 찾을 수 없음` | ①을 다시 확인하세요. Windows는 설치할 때 "Add python.exe to PATH"를 체크하지 않았다면 Python을 다시 설치하면서 체크하세요. |
+| Windows에서 실행하면 **Microsoft Store가 열리거나** 가상환경을 만들다 실패 | Windows의 가짜 `python` 바로가기 때문입니다. **설정 → 앱 → 고급 앱 설정 → 앱 실행 별칭**에서 `python.exe`, `python3.exe`를 끈 뒤, python.org에서 설치하세요. |
+| Ubuntu에서 `ensurepip is not available` | `sudo apt install python3-venv`를 설치한 뒤 프로젝트 폴더의 `.venv` 폴더를 지우고 다시 실행하세요. |
+| `pip install failed` | 인터넷 연결을 확인하세요. 회사·학교 네트워크라면 보안 정책으로 막혀 있을 수 있습니다. `.venv` 폴더를 지우고 다시 실행해 보세요. |
+| 포트 8000이 이미 사용 중이라는 오류 | 이미 실행 중인 창이 있는지 확인하세요. 다른 프로그램이 8000번을 쓴다면 `config.yaml`의 `server: port:` 값을 `8080` 등으로 바꾸세요(실행 창의 안내 문구는 8000으로 나오지만, 브라우저는 바꾼 포트로 열립니다). |
+| 카드에 "조회 실패"가 뜸 | 인터넷 연결을 확인하고 새로고침을 눌러 보세요. Yahoo / CNN 쪽이 일시적으로 응답하지 않을 때도 있습니다. |
+| 화면이 이전 모습 그대로 | 업데이트 후라면 브라우저에서 `Ctrl + F5`(macOS는 `Cmd + Shift + R`)로 새로고침하세요. |
+
+### 폴더 구성 (실행에 필요한 파일)
+
+| 파일 | 역할 |
+|---|---|
+| `run.bat` / `run.sh` | 실행 파일 (Windows / macOS·Linux) |
+| `requirements.txt` | 설치할 패키지 목록 |
+| `config.yaml` | 기준 숫자·포트·자동 새로고침 간격 설정 |
+| `app/`, `static/` | 서버와 화면 코드 |
+| `.venv/` | 처음 실행할 때 자동으로 생기는 가상환경 (지워도 다음 실행 때 다시 만들어짐) |
 
 ## 기준 바꾸기
 
