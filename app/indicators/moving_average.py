@@ -13,7 +13,12 @@ _LABELS = {STRONG: "장기 이평선 아래로 크게 이탈", SIGNAL: "장기 �
 
 
 def to_weekly(s: pd.Series) -> pd.Series:
-    return s.resample("W-FRI").last().dropna()
+    """주(월~금)마다 마지막 거래일 종가. 인덱스는 그 실제 거래일이라
+    진행 중인 주나 금요일 휴장 주도 일봉과 날짜가 맞는다."""
+    s = s.dropna()
+    week = s.index.to_period("W-FRI")
+    last_of_week = ~pd.Series(week).duplicated(keep="last").to_numpy()
+    return s[last_of_week]
 
 
 def grade_gap(gap: float, cfg: dict) -> str:

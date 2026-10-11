@@ -130,3 +130,21 @@ def test_ma_weekly_insufficient_uses_daily_only():
 def test_ma_daily_insufficient():
     r = moving_average.MovingAverage().evaluate(ctx(IND["moving_average"], series([100] * 150)))
     assert r.status == INSUFFICIENT
+
+
+# --- 주봉 라벨: 진행 중인 주는 실제 마지막 거래일로 ----------------------
+
+def test_to_weekly_labels_with_actual_last_trading_day():
+    s = series(range(1, 13))  # 2020-01-01(수) ~ 2020-01-16(목)
+    weekly = moving_average.to_weekly(s)
+    assert weekly.index[-1] == s.index[-1]
+    assert weekly.iloc[-1] == 12.0
+    assert list(weekly.index.strftime("%Y-%m-%d")) == ["2020-01-03", "2020-01-10", "2020-01-16"]
+
+
+def test_weekly_rsi_overlay_matches_card_midweek():
+    s = series(list(range(300, 100, -1)) + [103, 106, 109, 112, 115])  # 마지막 날이 화요일
+    assert s.index[-1].weekday() != 4
+    r = rsi.Rsi().evaluate(ctx(IND["rsi"], s))
+    card_value = float(r.details["주봉 RSI(14)"].split()[0])
+    assert round(r.overlays["주봉 RSI"][-1]["value"], 1) == card_value
