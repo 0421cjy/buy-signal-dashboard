@@ -1,7 +1,7 @@
 # 매수 기준 대시보드 — 설계 문서
 
 - 작성일: 2026-10-11
-- 상태: 사용자 검토 대기
+- 상태: 승인됨
 
 ## 1. 목적
 
@@ -119,15 +119,15 @@ IndicatorResult:
 
 ### 5.4 MDD — ticker (판정) + S&P 500 (참고)
 - **종목 MDD (`mdd`, scope ticker, scored)**
-  - 데이터: 입력 종목의 전체 이력 일봉 종가
-  - 계산: `현재 종가 / 전체 이력 최고 종가 − 1`
+  - 데이터: 입력 종목의 일봉 종가 (최근 52주 = 252거래일, 차트용으로 5년 조회)
+  - 계산: `현재 종가 / 최근 52주(252거래일) 최고 종가 − 1`
   - 판정:
     - `value > −14%` → neutral (대기)
     - `−20% < value ≤ −14%` → signal (매수 시작)
     - `value ≤ −20%` → strong_signal (비중 대폭 확대)
-  - details: 52주 최고 종가 대비 하락률(참고)
+  - details: 사상 최고 종가 대비 하락률(참고, 조회 가능한 전체 이력 기준)
 - **S&P 500 MDD (`market_mdd`, scope market, 참고용 `scored: false`)**
-  - 데이터: Yahoo `^GSPC` 전체 이력 일봉 종가, 계산은 위와 같음
+  - 데이터: Yahoo `^GSPC` 전체 이력 일봉 종가, 계산: `현재 종가 / 전체 이력 최고 종가 − 1` (사상 최고가 기준)
   - 같은 구간 규칙으로 배지를 표시하지만 종합 점수에는 넣지 않는다. 카드에 "참고" 표시를 붙인다.
 
 ### 5.5 200일 / 200주 이동평균 — ticker
@@ -172,7 +172,7 @@ IndicatorResult:
 - 상단: 제목, 티커 입력창 + 조회 버튼, 최근 조회 티커 칩(최대 5개, localStorage), 마지막 갱신 시각, 새로고침 버튼
 - 종합 바: 충족 개수 점(●○), "n / m 충족 (강한 신호 k)"
 - 시장 지표 섹션: 공포·탐욕, VIX 카드와 S&P 500 MDD 참고 카드("참고" 표시, 점수 제외). 페이지를 열면 바로 조회한다.
-- 종목 지표 섹션: 검색 전에는 안내 문구만 보인다. 검색하면 RSI, 종목 MDD, 200일/200주 이평 카드와 참고 정보(주봉 RSI, 52주 고점 대비 하락률)를 표시한다.
+- 종목 지표 섹션: 검색 전에는 안내 문구만 보인다. 검색하면 RSI, 종목 MDD, 200일/200주 이평 카드와 참고 정보(주봉 RSI, 사상 최고가 대비 하락률)를 표시한다.
 - 카드 내용: 지표명, 현재 값, 상태 배지(색상 + 텍스트), 한 줄 설명, 판단 기준, 데이터 기준일, 최근 1년 미니 차트(임계선은 점선)
 - 카드를 클릭하면 상세 차트 모달이 열린다(1년/5년 전환). 이동평균 카드는 가격·200일선·200주선을 함께 그린다.
 - 다크/라이트 모드는 `prefers-color-scheme`을 따른다. 모바일 폭에서는 카드를 1열로 배치한다.
@@ -197,7 +197,7 @@ cache_ttl_seconds: 600
 indicators:
   fear_greed: { enabled: true, strong_below: 20, signal_below: 25 }
   vix:        { enabled: true, strong_at_or_above: 30, signal_at_or_above: 25 }
-  mdd:        { enabled: true, signal_at_or_below: -0.14, strong_at_or_below: -0.20 }
+  mdd:        { enabled: true, lookback_days: 252, signal_at_or_below: -0.14, strong_at_or_below: -0.20 }
   market_mdd: { enabled: true, index: "^GSPC", signal_at_or_below: -0.14, strong_at_or_below: -0.20 }
   rsi:        { enabled: true, period: 14, strong_at_or_below: 30, signal_at_or_below: 35 }
   moving_average: { enabled: true, daily_window: 200, weekly_window: 200, strong_gap_at_or_below: -0.05 }
