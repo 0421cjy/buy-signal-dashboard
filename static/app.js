@@ -54,6 +54,11 @@ function renderSummary() {
   box.append(el("span", "dots", "●".repeat(s.met) + "○".repeat(Math.max(s.total - s.met, 0))), el("span", null, text));
 }
 
+// 차트 숫자는 소수 1자리로 (예: 56.1238 → 56.1, 262000 → 262,000.0)
+function fmt1(v) {
+  return Number(v).toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+}
+
 function sliceRange(points, range) {
   if (range === "5y" || points.length === 0) return points;
   const last = new Date(points[points.length - 1].date);
@@ -79,7 +84,7 @@ function chartConfig(r, range, mini) {
   });
   (r.thresholds || []).forEach((t) => {
     datasets.push({
-      label: `기준 ${t}`, isThreshold: true, data: labels.map(() => t),
+      label: `기준 ${fmt1(t)}`, isThreshold: true, data: labels.map(() => t),
       borderColor: css("--threshold"), borderDash: [4, 4], borderWidth: 1, pointRadius: 0,
     });
   });
@@ -94,7 +99,7 @@ function chartConfig(r, range, mini) {
         tooltip: {
           enabled: !mini,
           // 기준선은 값이 변하지 않으므로 "기준 30: 30" 대신 "기준 30" 하나만 표시
-          callbacks: { label: (item) => (item.dataset.isThreshold ? item.dataset.label : `${item.dataset.label}: ${item.formattedValue}`) },
+          callbacks: { label: (item) => (item.dataset.isThreshold ? item.dataset.label : `${item.dataset.label}: ${fmt1(item.parsed.y)}`) },
         },
       },
       scales: {
