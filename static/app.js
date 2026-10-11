@@ -177,9 +177,16 @@ function setUpdated(iso) {
   $("updated").textContent = `마지막 갱신 ${t.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}`;
 }
 
+// 새로고침이면 기존 카드를 그대로 둔 채(흐리게) 응답을 기다렸다가 한 번에 교체한다
+function setRefreshing(containerId, on) {
+  $(containerId).classList.toggle("refreshing", on);
+}
+
 async function loadMarket(refresh = false) {
   const seq = ++state.marketSeq;
-  renderMessage("market-cards", "시장 지표를 불러오는 중…");
+  const keep = refresh && state.market.length > 0;
+  if (keep) setRefreshing("market-cards", true);
+  else renderMessage("market-cards", "시장 지표를 불러오는 중…");
   try {
     const body = await getJSON(`/api/market${refresh ? "?refresh=1" : ""}`);
     if (seq !== state.marketSeq) return;
@@ -188,8 +195,14 @@ async function loadMarket(refresh = false) {
     setUpdated(body.fetched_at);
   } catch (err) {
     if (seq !== state.marketSeq) return;
-    state.market = [];
-    renderMessage("market-cards", `시장 지표를 불러오지 못했습니다: ${err.message}`);
+    if (keep) {
+      $("updated").textContent = `갱신 실패: ${err.message}`;
+    } else {
+      state.market = [];
+      renderMessage("market-cards", `시장 지표를 불러오지 못했습니다: ${err.message}`);
+    }
+  } finally {
+    if (seq === state.marketSeq) setRefreshing("market-cards", false);
   }
   renderSummary();
 }
@@ -198,8 +211,10 @@ async function loadTicker(raw, refresh = false) {
   const symbol = raw.trim();
   if (!symbol) return;
   const seq = ++state.tickerSeq;
+  const keep = refresh && state.tickerInfo !== null;
   $("ticker-error").hidden = true;
-  renderMessage("ticker-cards", `${symbol} 조회 중…`);
+  if (keep) setRefreshing("ticker-cards", true);
+  else renderMessage("ticker-cards", `${symbol} 조회 중…`);
   try {
     const body = await getJSON(`/api/ticker/${encodeURIComponent(symbol)}${refresh ? "?refresh=1" : ""}`);
     if (seq !== state.tickerSeq) return;
@@ -211,13 +226,17 @@ async function loadTicker(raw, refresh = false) {
     setUpdated(body.fetched_at);
   } catch (err) {
     if (seq !== state.tickerSeq) return;
-    $("ticker-error").textContent = err.message;
+    $("ticker-error").textContent = keep ? `갱신 실패: ${err.message}` : err.message;
     $("ticker-error").hidden = false;
-    if (!state.tickerInfo) {
+    if (keep) {
+      // 기존 카드 유지
+    } else if (!state.tickerInfo) {
       renderMessage("ticker-cards", "티커를 검색하면 RSI, MDD(52주 고점 대비), 200일/200주 이동평균을 확인할 수 있습니다.");
     } else {
       renderCards("ticker-cards", state.ticker, () => loadTicker(state.tickerInfo.symbol, true));
     }
+  } finally {
+    if (seq === state.tickerSeq) setRefreshing("ticker-cards", false);
   }
   renderSummary();
 }
@@ -258,9 +277,15 @@ function drawDetail() {
 
 function init() {
   $("search-form").addEventListener("submit", (e) => { e.preventDefault(); loadTicker($("ticker-input").value); });
-  $("refresh-btn").addEventListener("click", () => {
-    loadMarket(true);
-    if (state.tickerInfo) loadTicker(state.tickerInfo.symbol, true);
+  $("refresh-btn").addEventListener("click", async () => {
+    const btn = $("refresh-btn");
+    btn.disabled = true;
+    btn.textContent = "갱신 중…";
+    const jobs = [loadMarket(true)];
+    if (state.tickerInfo) jobs.push(loadTicker(state.tickerInfo.symbol, true));
+    await Promise.allSettled(jobs);
+    btn.disabled = false;
+    btn.textContent = "새로고침";
   });
   $("detail-close").addEventListener("click", () => $("detail").close());
   $("detail").addEventListener("click", (e) => { if (e.target === $("detail")) $("detail").close(); });

@@ -72,6 +72,8 @@ button.ghost { background: transparent; color: var(--text); border-color: var(--
 }
 .dots { letter-spacing: 3px; color: var(--strong); font-size: 1.2rem; }
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.cards.refreshing { opacity: 0.55; pointer-events: none; transition: opacity 0.15s; }
+button:disabled { opacity: 0.6; cursor: progress; }
 .card {
   background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--neutral);
   border-radius: 12px; padding: 14px 16px; cursor: pointer; display: flex; flex-direction: column; gap: 6px;
