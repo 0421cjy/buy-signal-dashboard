@@ -16,8 +16,8 @@
 ### 성공 기준
 
 1. `run.bat`(Windows) 또는 `run.sh`(macOS/Linux)를 실행하면 가상환경 생성, 의존성 설치, 서버 실행, 브라우저 열기가 자동으로 진행된다.
-2. 페이지를 열면 시장 지표 3개가 자동으로 표시된다.
-3. 미국 티커(`AAPL`)와 한국 종목코드(`005930`)를 입력하면 종목 지표 2개가 추가되고, 종합 점수가 `n / 5`로 바뀐다.
+2. 페이지를 열면 시장 지표 2개(공포·탐욕, VIX)와 S&P 500 MDD 참고 카드가 자동으로 표시된다.
+3. 미국 티커(`AAPL`)와 한국 종목코드(`005930`)를 입력하면 종목 지표 3개(RSI, 종목 MDD, 200일/200주 이평)가 추가되고, 종합 점수가 `n / 5`로 바뀐다.
 4. 지표 하나의 데이터 조회가 실패해도 나머지 지표는 정상 표시된다.
 5. 새 지표는 `app/indicators/`에 파일 하나를 추가하고 `config.yaml`에 임계값을 넣는 것만으로 화면에 나타난다.
 
@@ -73,6 +73,7 @@ class Indicator:
     id: str             # "rsi"
     name: str           # "RSI (14)"
     scope: str          # "market" | "ticker"
+    scored: bool        # True면 종합 점수에 포함, False면 참고용 카드
     def evaluate(self, ctx: EvalContext) -> IndicatorResult: ...
 ```
 
@@ -83,6 +84,7 @@ IndicatorResult:
     id: str
     name: str
     scope: str
+    scored: bool
     status: "strong_signal" | "signal" | "neutral" | "error" | "insufficient_data"
     value: float | None          # 대표 값
     display: str                 # 화면 표시 문자열, 예: "−16.2%"
@@ -115,25 +117,34 @@ IndicatorResult:
 - 판정: `value ≤ 30` → strong_signal(과매도) / `30 < value ≤ 35` → signal(과매도 근접) / 그 외 neutral
 - details: 주봉 RSI(14), 참고용
 
-### 5.4 MDD — market (S&P 500)
-- 데이터: Yahoo `^GSPC` 전체 이력 일봉 종가
-- 계산: `현재 종가 / 전체 이력 최고 종가 − 1`
-- 판정:
-  - `value > −14%` → neutral (대기)
-  - `−20% < value ≤ −14%` → signal (매수 시작)
-  - `value ≤ −20%` → strong_signal (비중 대폭 확대)
-- 종목 검색 시 종목 지표 영역에 **종목 MDD**(종목 전체 이력 최고 종가 대비)를 참고 정보로 표시한다. 판정에는 넣지 않는다.
+### 5.4 MDD — ticker (판정) + S&P 500 (참고)
+- **종목 MDD (`mdd`, scope ticker, scored)**
+  - 데이터: 입력 종목의 전체 이력 일봉 종가
+  - 계산: `현재 종가 / 전체 이력 최고 종가 − 1`
+  - 판정:
+    - `value > −14%` → neutral (대기)
+    - `−20% < value ≤ −14%` → signal (매수 시작)
+    - `value ≤ −20%` → strong_signal (비중 대폭 확대)
+  - details: 52주 최고 종가 대비 하락률(참고)
+- **S&P 500 MDD (`market_mdd`, scope market, 참고용 `scored: false`)**
+  - 데이터: Yahoo `^GSPC` 전체 이력 일봉 종가, 계산은 위와 같음
+  - 같은 구간 규칙으로 배지를 표시하지만 종합 점수에는 넣지 않는다. 카드에 "참고" 표시를 붙인다.
 
 ### 5.5 200일 / 200주 이동평균 — ticker
 - 계산: 200일 SMA(일봉 종가), 200주 SMA(주봉 종가, 주 마지막 거래일 기준). 이격도 = `현재가 / SMA − 1`
-- 판정: 현재가가 200일 SMA 아래 **또는** 200주 SMA 아래 → signal / 둘 다 위 → neutral. 이 지표에는 strong_signal이 없다.
-- details: 200일 이격도·이탈 여부, 200주 이격도·이탈 여부
+- 판정: 200일과 200주 각각에 대해 다음과 같이 판정하고, 둘 중 더 강한 상태를 지표의 status로 쓴다.
+  - 이격도 `≤ −5%` (이평선 아래로 5% 이상 이탈) → strong_signal
+  - `−5% < 이격도 < 0` (이평선 아래) → signal
+  - 이격도 `≥ 0` → neutral
+  - 예: 200일 −2%(signal), 200주 +10%(neutral) → signal / 200일 −7%(strong) → strong_signal
+- details: 200일 이격도·판정, 200주 이격도·판정
 - 200주 데이터가 부족하면 200주 항목을 "데이터 부족"으로 표시하고 200일만으로 판정한다. 200일 데이터도 부족하면 status는 `insufficient_data`다.
 
 ### 5.6 종합 점수
+- 대상: `scored: true`인 지표만 (공포·탐욕, VIX, RSI, 종목 MDD, 이동평균). S&P 500 MDD는 제외한다.
 - 충족 = status가 `signal` 또는 `strong_signal`
 - 표시: `충족 수 / 평가된 기준 수`, 그리고 그중 강한 신호 수
-- 처음 열 때: 시장 3개 기준 → "시장 n / 3"
+- 처음 열 때: 시장 2개 기준 → "시장 n / 2"
 - 종목 검색 후: 5개 기준 → "n / 5"
 - `error`와 `insufficient_data`는 분모에서 빼고 "(1개 조회 실패)"처럼 별도로 표시한다.
 
@@ -150,8 +161,8 @@ IndicatorResult:
 | 메서드 | 경로 | 설명 |
 |---|---|---|
 | GET | `/` | `static/index.html` |
-| GET | `/api/market?refresh=0` | 시장 지표 결과 목록 + 시장 종합 점수 |
-| GET | `/api/ticker/{symbol}?refresh=0` | 종목 지표 결과 목록 + 종목 정보(정규화 심볼, 이름, 종목 MDD) |
+| GET | `/api/market?refresh=0` | 시장 지표 결과 목록(공포·탐욕, VIX, S&P 500 MDD 참고) + 시장 종합 점수 |
+| GET | `/api/ticker/{symbol}?refresh=0` | 종목 지표 결과 목록(RSI, 종목 MDD, 이동평균) + 종목 정보(정규화 심볼, 이름) |
 | GET | `/api/health` | 상태 확인 |
 
 5개 기준 종합 점수는 프론트엔드가 두 응답을 합쳐 계산한다. 그래야 시장 지표를 다시 조회하지 않고 종목만 추가로 조회할 수 있다.
@@ -160,8 +171,8 @@ IndicatorResult:
 
 - 상단: 제목, 티커 입력창 + 조회 버튼, 최근 조회 티커 칩(최대 5개, localStorage), 마지막 갱신 시각, 새로고침 버튼
 - 종합 바: 충족 개수 점(●○), "n / m 충족 (강한 신호 k)"
-- 시장 지표 섹션: 공포·탐욕, VIX, S&P 500 MDD 카드. 페이지를 열면 바로 조회한다.
-- 종목 지표 섹션: 검색 전에는 안내 문구만 보인다. 검색하면 RSI, 200일/200주 이평 카드와 참고 정보(종목 MDD, 주봉 RSI)를 표시한다.
+- 시장 지표 섹션: 공포·탐욕, VIX 카드와 S&P 500 MDD 참고 카드("참고" 표시, 점수 제외). 페이지를 열면 바로 조회한다.
+- 종목 지표 섹션: 검색 전에는 안내 문구만 보인다. 검색하면 RSI, 종목 MDD, 200일/200주 이평 카드와 참고 정보(주봉 RSI, 52주 고점 대비 하락률)를 표시한다.
 - 카드 내용: 지표명, 현재 값, 상태 배지(색상 + 텍스트), 한 줄 설명, 판단 기준, 데이터 기준일, 최근 1년 미니 차트(임계선은 점선)
 - 카드를 클릭하면 상세 차트 모달이 열린다(1년/5년 전환). 이동평균 카드는 가격·200일선·200주선을 함께 그린다.
 - 다크/라이트 모드는 `prefers-color-scheme`을 따른다. 모바일 폭에서는 카드를 1열로 배치한다.
@@ -186,9 +197,10 @@ cache_ttl_seconds: 600
 indicators:
   fear_greed: { enabled: true, strong_below: 20, signal_below: 25 }
   vix:        { enabled: true, strong_at_or_above: 30, signal_at_or_above: 25 }
-  mdd:        { enabled: true, index: "^GSPC", signal_at_or_below: -0.14, strong_at_or_below: -0.20 }
+  mdd:        { enabled: true, signal_at_or_below: -0.14, strong_at_or_below: -0.20 }
+  market_mdd: { enabled: true, index: "^GSPC", signal_at_or_below: -0.14, strong_at_or_below: -0.20 }
   rsi:        { enabled: true, period: 14, strong_at_or_below: 30, signal_at_or_below: 35 }
-  moving_average: { enabled: true, daily_window: 200, weekly_window: 200 }
+  moving_average: { enabled: true, daily_window: 200, weekly_window: 200, strong_gap_at_or_below: -0.05 }
 ```
 
 `enabled: false`로 두면 해당 지표를 계산하지도, 표시하지도 않는다.
@@ -197,8 +209,8 @@ indicators:
 
 - **지표 단위 테스트**(네트워크 없음, 고정 시계열)
   - RSI: 알려진 입력의 Wilder RSI 값, 경계값 30·35
-  - MDD: 경계값 −14%, −20%, −30%
-  - 이동평균: 200일·200주 이탈 조합 4가지, 200주 데이터 부족, 200일 데이터 부족
+  - MDD: 경계값 −14%, −20%, −30%, S&P 500 MDD가 종합 점수에서 제외되는지
+  - 이동평균: 이격도 경계값 0%, −4.9%, −5%, 200일·200주 조합 시 더 강한 상태 선택, 200주 데이터 부족, 200일 데이터 부족
   - 공포·탐욕: 19.9 / 20 / 24.9 / 25, VIX: 24.9 / 25 / 29.9 / 30
 - **티커 정규화**: 대소문자, 6자리 숫자의 .KS → .KQ 재조회, 접미사 유지, 없는 종목
 - **캐시**: TTL 만료, refresh 무시
