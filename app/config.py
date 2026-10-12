@@ -19,6 +19,10 @@ DEFAULT_CONFIG: dict = {
             "enabled": True, "index": "^GSPC",
             "signal_at_or_below": -0.14, "strong_at_or_below": -0.30, "extreme_at_or_below": -0.47,
         },
+        "qqq_mdd": {
+            "enabled": True, "index": "QQQ", "anchor": -0.20,
+            "signal_at_or_below": -0.14, "strong_at_or_below": -0.30, "extreme_at_or_below": -0.47,
+        },
         "rsi": {"enabled": True, "period": 14, "daily_at_or_below": 30, "weekly_at_or_below": 35},
         "mdd": {
             "enabled": True,

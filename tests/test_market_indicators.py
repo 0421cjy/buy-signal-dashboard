@@ -95,3 +95,32 @@ def test_mdd_boundary_float_noise_still_hits_level(level, dd):
     lv = {"signal": level, "strong": level, "extreme": level}
     assert market_mdd.grade(dd, lv) != NEUTRAL
     assert market_mdd.is_extreme(dd, lv)
+
+
+# --- QQQ MDD (참고) ----------------------------------------------------------
+
+from app.indicators import qqq_mdd  # noqa: E402
+
+
+def test_qqq_mdd_starts_at_minus_20_with_same_remaining_price_ratio():
+    s = series([100, 200, 150])   # 사상 최고 200 대비 -25%
+    r = qqq_mdd.QqqMdd().evaluate(ctx(IND["qqq_mdd"], daily={"QQQ": s}))
+    assert r.name == "QQQ MDD"
+    assert r.scored is False
+    assert r.value == pytest.approx(-0.25)
+    assert r.status == SIGNAL
+    assert r.thresholds == pytest.approx([-20.0, -41.0042, -60.9101], abs=1e-3)
+    assert r.threshold == "-20.0% 이하 매수 시작 · -41.0% 이하 비중 확대 · -60.9% 이하 극단적 하락"
+    assert r.warning is None
+
+
+@pytest.mark.parametrize("last,expected", [(161, NEUTRAL), (160, SIGNAL), (118, SIGNAL), (117, STRONG)])
+def test_qqq_mdd_boundaries(last, expected):
+    r = qqq_mdd.QqqMdd().evaluate(ctx(IND["qqq_mdd"], daily={"QQQ": series([100, 200, last])}))
+    assert r.status == expected
+
+
+def test_qqq_mdd_extreme_warning():
+    r = qqq_mdd.QqqMdd().evaluate(ctx(IND["qqq_mdd"], daily={"QQQ": series([100, 200, 70])}))
+    assert r.status == STRONG
+    assert "극단적 하락" in r.warning

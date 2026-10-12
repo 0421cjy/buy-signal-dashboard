@@ -14,6 +14,7 @@ FG = {"score": 15.0, "as_of": "2026-10-09", "history": []}
 DATA = {
     "^VIX": series([20] * 50 + [31]),
     "^GSPC": series([100] * 50 + [85]),
+    "QQQ": series([100] * 50 + [75]),
     "AAPL": series([100] * 1100 + [90]),
     "123456.KQ": series([100] * 300 + [97]),
 }
@@ -43,7 +44,7 @@ def test_health():
 def test_market():
     body = make_client().get("/api/market").json()
     ids = [r["id"] for r in body["results"]]
-    assert ids == ["fear_greed", "vix", "market_mdd"]
+    assert ids == ["fear_greed", "vix", "market_mdd", "qqq_mdd"]
     assert body["score"] == {"met": 2, "strong": 2, "total": 2, "failed": 0}
     assert "fetched_at" in body
 
