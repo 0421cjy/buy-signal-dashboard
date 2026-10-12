@@ -15,10 +15,17 @@ indicators:
   # S&P 500 MDD(참고, 점수 제외): 사상 최고가 대비
   market_mdd:
     { enabled: true, index: "^GSPC", signal_at_or_below: -0.14, strong_at_or_below: -0.30, extreme_at_or_below: -0.47 }
-  # QQQ MDD(참고, 점수 제외): 사상 최고가 대비. 첫 신호는 anchor(-20%), 이후 단계는
-  # 아래 S&P 기준 단계(-14/-30/-47)의 '남은 가격' 비율을 anchor에 맞춰 옮김 → -20% / -41.0% / -60.9%
+  # QQQ MDD(참고, 점수 제외): 사상 최고가 대비. 첫 신호 = QQQ 실제 연평균 최대 하락률(끝난 해가
+  # min_years 미만이면 anchor -20%). 이후 단계는 S&P 기준 단계(-14/-30/-47)의 '남은 가격' 비율을 첫 신호에 맞춰 옮김
   qqq_mdd:
-    { enabled: true, index: "QQQ", anchor: -0.20, signal_at_or_below: -0.14, strong_at_or_below: -0.30, extreme_at_or_below: -0.47 }
+    enabled: true
+    index: "QQQ"
+    anchor: -0.20
+    min_years: 3
+    min_days_per_year: 200
+    signal_at_or_below: -0.14
+    strong_at_or_below: -0.30
+    extreme_at_or_below: -0.47
   rsi:            { enabled: true, period: 14, daily_at_or_below: 30, weekly_at_or_below: 35 }
   # 종목 MDD: 올해 고점 대비. 매수 시작 = 종목 연평균 최대 하락률,
   # 비중 확대·극단적 하락은 아래 숫자의 '남은 가격' 비율(86%→70%→53%)을 그대로 적용해 함께 이동

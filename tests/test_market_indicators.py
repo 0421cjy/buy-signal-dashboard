@@ -124,3 +124,33 @@ def test_qqq_mdd_extreme_warning():
     r = qqq_mdd.QqqMdd().evaluate(ctx(IND["qqq_mdd"], daily={"QQQ": series([100, 200, 70])}))
     assert r.status == STRONG
     assert "극단적 하락" in r.warning
+
+
+def _qqq_years(annual, current_values):
+    """해마다 100에서 시작해 후반에 dd만큼 떨어지는 일봉 + 올해 값."""
+    import pandas as pd
+
+    blocks = []
+    for i, dd in enumerate(annual):
+        idx = pd.bdate_range(f"{2020 + i}-01-01", f"{2020 + i}-12-31")
+        half = len(idx) // 2
+        blocks.append(pd.Series([100.0] * half + [100.0 * (1 + dd)] * (len(idx) - half), index=idx))
+    idx = pd.bdate_range(f"{2020 + len(annual)}-01-01", periods=len(current_values))
+    blocks.append(pd.Series([float(v) for v in current_values], index=idx))
+    return pd.concat(blocks)
+
+
+def test_qqq_mdd_first_signal_is_actual_average_annual_drawdown():
+    s = _qqq_years([-0.3, -0.2, -0.4], [100, 65])      # 연평균 -30%, 지금 -35%
+    r = qqq_mdd.QqqMdd().evaluate(ctx(IND["qqq_mdd"], daily={"QQQ": s}))
+    assert r.thresholds[0] == pytest.approx(-30.0)
+    assert r.thresholds[1] == pytest.approx(-56.98, abs=0.05)
+    assert r.thresholds[2] == pytest.approx(-77.72, abs=0.05)
+    assert r.status == SIGNAL
+    assert r.details["연평균 최대 하락률"] == "-30.0% (3년)"
+
+
+def test_qqq_mdd_short_history_uses_default_anchor():
+    r = qqq_mdd.QqqMdd().evaluate(ctx(IND["qqq_mdd"], daily={"QQQ": series([100, 200, 150])}))
+    assert r.thresholds[0] == pytest.approx(-20.0)
+    assert "기본값" in r.details["연평균 최대 하락률"]
