@@ -10,6 +10,7 @@ const STATUS = {
 const EVALUATED = ["strong_signal", "signal", "neutral"];
 const RECENT_KEY = "buy-signal:recent";
 const RECENT_LIMIT = 15; // 최근 조회 티커 칩 최대 개수
+const MARKET_CACHE_KEY = "buy-signal:market"; // 마지막으로 받은 시장 지표 (처음 열 때 빈 화면 대신 바로 표시)
 
 // marketSeq/tickerSeq: 늦게 도착한 이전 요청의 응답이 최신 결과를 덮어쓰지 않게 하는 순번
 const state = { market: [], ticker: [], tickerInfo: null, charts: {}, detail: null, detailResult: null, detailRange: "1y", marketSeq: 0, tickerSeq: 0, lastRefresh: 0 };
@@ -196,9 +197,35 @@ function setRefreshing(containerId, on) {
   $(containerId).classList.toggle("refreshing", on);
 }
 
+function readMarketCache() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(MARKET_CACHE_KEY) || "null");
+    return cached && Array.isArray(cached.results) && cached.results.length ? cached : null;
+  } catch { return null; }
+}
+
+function writeMarketCache(body) {
+  try {
+    localStorage.setItem(MARKET_CACHE_KEY, JSON.stringify({ fetched_at: body.fetched_at, results: body.results }));
+  } catch { /* 저장 불가 환경(용량 초과·사생활 보호 모드)은 무시 */ }
+}
+
+// 처음 열 때 저장된 시장 지표가 있으면 먼저 보여주고, 최신 데이터는 그 뒤에 받아 교체한다
+function showCachedMarket() {
+  const cached = readMarketCache();
+  if (!cached || state.market.length) return false;
+  state.market = cached.results;
+  renderCards("market-cards", state.market, () => loadMarket(true));
+  const t = cached.fetched_at ? new Date(cached.fetched_at) : null;
+  const when = t ? `${t.getMonth() + 1}/${t.getDate()} ${t.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}` : "";
+  $("updated").textContent = `저장된 데이터${when ? ` (${when})` : ""} · 최신 데이터 받는 중…`;
+  renderSummary();
+  return true;
+}
+
 async function loadMarket(refresh = false) {
   const seq = ++state.marketSeq;
-  const keep = refresh && state.market.length > 0;
+  const keep = state.market.length > 0;   // 이미 카드가 있으면(새로고침·저장된 데이터) 유지한 채 교체
   if (keep) setRefreshing("market-cards", true);
   else renderMessage("market-cards", "시장 지표를 불러오는 중…");
   try {
@@ -207,6 +234,7 @@ async function loadMarket(refresh = false) {
     state.market = body.results;
     renderCards("market-cards", state.market, () => loadMarket(true));
     setUpdated(body.fetched_at);
+    writeMarketCache(body);
   } catch (err) {
     if (seq !== state.marketSeq) return;
     if (keep) {
@@ -329,6 +357,7 @@ function init() {
   renderRecent();
   renderSummary();
   state.lastRefresh = Date.now();
+  showCachedMarket();
   loadMarket();
   getJSON("/api/settings").then((s) => startAutoRefresh(s.auto_refresh_minutes)).catch(() => {});
 }
