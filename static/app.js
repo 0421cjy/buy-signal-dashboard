@@ -13,7 +13,7 @@ const RECENT_LIMIT = 15; // 최근 조회 티커 칩 최대 개수
 const MARKET_CACHE_KEY = "buy-signal:market"; // 마지막으로 받은 시장 지표 (처음 열 때 빈 화면 대신 바로 표시)
 
 // marketSeq/tickerSeq: 늦게 도착한 이전 요청의 응답이 최신 결과를 덮어쓰지 않게 하는 순번
-const state = { market: [], ticker: [], tickerInfo: null, charts: {}, detail: null, detailResult: null, detailRange: "1y", marketSeq: 0, tickerSeq: 0, lastRefresh: 0, koNames: {} };
+const state = { market: [], ticker: [], tickerInfo: null, charts: {}, detail: null, detailResult: null, detailRange: "1y", marketSeq: 0, tickerSeq: 0, lastRefresh: 0, koNames: {}, symbolByName: {} };
 
 const $ = (id) => document.getElementById(id);
 
@@ -262,7 +262,9 @@ async function loadTicker(raw, refresh = false) {
     if (seq !== state.tickerSeq) return;
     state.ticker = body.results;
     state.tickerInfo = { symbol: body.symbol, name: body.name };
-    $("ticker-title").textContent = `종목 지표 · ${body.name} (${body.symbol})`;
+    const label = displayName(body.symbol, body.name);
+    $("ticker-title").textContent = `종목 지표 · ${isKorean(body.symbol) ? label : body.name} (${body.symbol})`;
+    if (!refresh) $("ticker-input").value = label;   // 자동 새로고침 중에는 입력 중인 글자를 건드리지 않는다
     renderCards("ticker-cards", state.ticker, () => loadTicker(body.symbol, true));
     rememberTicker(body.symbol, body.name);
     setUpdated(body.fetched_at);
@@ -296,10 +298,22 @@ function isKorean(symbol) {
   return /\.(KS|KQ)$/i.test(symbol);
 }
 
-// 칩에 보일 이름: 한국 종목은 한글 종목명(미리보기 목록) → 조회 때 받은 이름 → 코드 순, 그 외는 티커
+// 화면에 보일 이름: 한국 종목은 한글 종목명(미리보기 목록) → 조회 때 받은 이름 → 코드 순, 그 외는 티커
+function displayName(symbol, name) {
+  if (!isKorean(symbol)) return symbol;
+  return state.koNames[symbol.toUpperCase()] || name || symbol;
+}
+
 function recentLabel(item) {
-  if (!isKorean(item.symbol)) return item.symbol;
-  return state.koNames[item.symbol.toUpperCase()] || item.name || item.symbol;
+  return displayName(item.symbol, item.name);
+}
+
+// 검색창 글자를 조회용 심볼로: 종목명(삼성전자)이면 코드로 바꾸고, 숫자·티커는 그대로 둔다
+function resolveInput(text) {
+  const t = text.trim();
+  if (state.symbolByName[t]) return state.symbolByName[t];
+  const recent = readRecent().find((item) => recentLabel(item) === t);
+  return recent ? recent.symbol : t;
 }
 
 function rememberTicker(symbol, name) {
@@ -315,7 +329,7 @@ function renderRecent() {
     const b = el("button", null, recentLabel(item));
     b.type = "button";
     b.title = item.symbol;
-    b.addEventListener("click", () => { $("ticker-input").value = item.symbol; loadTicker(item.symbol); });
+    b.addEventListener("click", () => { $("ticker-input").value = recentLabel(item); loadTicker(item.symbol); });
     return b;
   }));
 }
@@ -358,11 +372,15 @@ function startAutoRefresh(minutes) {
 }
 
 function init() {
-  $("search-form").addEventListener("submit", (e) => { e.preventDefault(); loadTicker($("ticker-input").value); });
+  $("search-form").addEventListener("submit", (e) => { e.preventDefault(); loadTicker(resolveInput($("ticker-input").value)); });
   fetch("/static/tickers.json")
     .then((res) => res.json())
     .then((items) => {
-      items.forEach((item) => { if (item.ko) state.koNames[item.symbol.toUpperCase()] = item.ko; });
+      items.forEach((item) => {
+        if (!item.ko) return;
+        state.koNames[item.symbol.toUpperCase()] = item.ko;
+        state.symbolByName[item.ko] = item.symbol;   // 검색창에 '삼성전자'·'애플'처럼 써도 조회되게
+      });
       renderRecent();   // 한글 종목명이 준비되면 검색 기록 칩을 다시 그린다
       attachSuggest($("ticker-input"), $("suggest-list"), items, (symbol) => loadTicker(symbol));
     })

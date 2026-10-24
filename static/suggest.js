@@ -56,7 +56,9 @@ function attachSuggest(input, list, items, onPick) {
 
   function pick(item) {
     close();
-    input.value = item.symbol;
+    // 한국 종목은 검색창에 종목명(삼성전자)을 보여주고, 조회는 코드로 한다
+    const korean = item.market === "KOSPI" || item.market === "KOSDAQ";
+    input.value = korean && item.ko ? item.ko : item.symbol;
     onPick(item.symbol);
   }
 
