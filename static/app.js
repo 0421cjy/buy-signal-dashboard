@@ -13,7 +13,7 @@ const RECENT_LIMIT = 15; // 최근 조회 티커 칩 최대 개수
 const MARKET_CACHE_KEY = "buy-signal:market"; // 마지막으로 받은 시장 지표 (처음 열 때 빈 화면 대신 바로 표시)
 
 // marketSeq/tickerSeq: 늦게 도착한 이전 요청의 응답이 최신 결과를 덮어쓰지 않게 하는 순번
-const state = { market: [], ticker: [], tickerInfo: null, charts: {}, detail: null, detailResult: null, detailRange: "1y", marketSeq: 0, tickerSeq: 0, lastRefresh: 0 };
+const state = { market: [], ticker: [], tickerInfo: null, charts: {}, detail: null, detailResult: null, detailRange: "1y", marketSeq: 0, tickerSeq: 0, lastRefresh: 0, koNames: {} };
 
 const $ = (id) => document.getElementById(id);
 
@@ -264,7 +264,7 @@ async function loadTicker(raw, refresh = false) {
     state.tickerInfo = { symbol: body.symbol, name: body.name };
     $("ticker-title").textContent = `종목 지표 · ${body.name} (${body.symbol})`;
     renderCards("ticker-cards", state.ticker, () => loadTicker(body.symbol, true));
-    rememberTicker(body.symbol);
+    rememberTicker(body.symbol, body.name);
     setUpdated(body.fetched_at);
   } catch (err) {
     if (seq !== state.tickerSeq) return;
@@ -283,22 +283,39 @@ async function loadTicker(raw, refresh = false) {
   renderSummary();
 }
 
+// 검색 기록 항목: { symbol, name }. 예전 버전은 심볼 문자열만 저장했으므로 읽을 때 맞춰 준다.
 function readRecent() {
-  try { return JSON.parse(localStorage.getItem(RECENT_KEY) || "[]"); } catch { return []; }
+  try {
+    const raw = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
+    return raw.map((item) => (typeof item === "string" ? { symbol: item, name: null } : item))
+              .filter((item) => item && item.symbol);
+  } catch { return []; }
 }
 
-function rememberTicker(symbol) {
-  const list = [symbol, ...readRecent().filter((s) => s !== symbol)].slice(0, RECENT_LIMIT);
+function isKorean(symbol) {
+  return /\.(KS|KQ)$/i.test(symbol);
+}
+
+// 칩에 보일 이름: 한국 종목은 한글 종목명(미리보기 목록) → 조회 때 받은 이름 → 코드 순, 그 외는 티커
+function recentLabel(item) {
+  if (!isKorean(item.symbol)) return item.symbol;
+  return state.koNames[item.symbol.toUpperCase()] || item.name || item.symbol;
+}
+
+function rememberTicker(symbol, name) {
+  const list = [{ symbol, name: name || null }, ...readRecent().filter((item) => item.symbol !== symbol)]
+    .slice(0, RECENT_LIMIT);
   try { localStorage.setItem(RECENT_KEY, JSON.stringify(list)); } catch { /* 저장 불가 환경은 무시 */ }
   renderRecent();
 }
 
 function renderRecent() {
   const box = $("recent");
-  box.replaceChildren(...readRecent().map((s) => {
-    const b = el("button", null, s);
+  box.replaceChildren(...readRecent().map((item) => {
+    const b = el("button", null, recentLabel(item));
     b.type = "button";
-    b.addEventListener("click", () => { $("ticker-input").value = s; loadTicker(s); });
+    b.title = item.symbol;
+    b.addEventListener("click", () => { $("ticker-input").value = item.symbol; loadTicker(item.symbol); });
     return b;
   }));
 }
@@ -344,7 +361,11 @@ function init() {
   $("search-form").addEventListener("submit", (e) => { e.preventDefault(); loadTicker($("ticker-input").value); });
   fetch("/static/tickers.json")
     .then((res) => res.json())
-    .then((items) => attachSuggest($("ticker-input"), $("suggest-list"), items, (symbol) => loadTicker(symbol)))
+    .then((items) => {
+      items.forEach((item) => { if (item.ko) state.koNames[item.symbol.toUpperCase()] = item.ko; });
+      renderRecent();   // 한글 종목명이 준비되면 검색 기록 칩을 다시 그린다
+      attachSuggest($("ticker-input"), $("suggest-list"), items, (symbol) => loadTicker(symbol));
+    })
     .catch(() => {}); // 목록을 못 불러와도 직접 입력 조회는 그대로 동작
   $("refresh-btn").addEventListener("click", refreshAll);
   $("detail-close").addEventListener("click", () => $("detail").close());
