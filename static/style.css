@@ -145,26 +145,8 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
   .detail-chart { height: 300px; }
 }
 
-/* 탭 */
-.tabs { display: flex; gap: 4px; margin-top: 14px; border-bottom: 1px solid var(--border); }
-.tabs button {
-  background: transparent; color: var(--muted); border: none; border-bottom: 2px solid transparent;
-  border-radius: 0; padding: 8px 14px; font-weight: 600;
-}
-.tabs button.active { color: var(--text); border-bottom-color: var(--accent); }
-
-/* 거시 지표 탭 */
-.macro-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
-.macro-chips .chip {
-  padding: 6px 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border);
-  font-size: 0.9rem; font-weight: 600; font-variant-numeric: tabular-nums;
-}
-.macro-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 8px 0; }
+/* 거시 지표 카드 · 큰 차트 */
+.macro-values dd { font-weight: 600; }
 .macro-range { display: flex; gap: 4px; }
 .macro-range button { padding: 4px 10px; background: transparent; color: var(--text); border-color: var(--border); }
 .macro-range button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-.macro-chart {
-  height: 460px; position: relative; background: var(--surface); border: 1px solid var(--border);
-  border-radius: 12px; padding: 12px;
-}
-@media (max-width: 640px) { .macro-chart { height: 340px; } }

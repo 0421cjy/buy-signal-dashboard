@@ -46,8 +46,9 @@ def test_footer_has_disclaimer_and_github_link():
     assert 'rel="noopener noreferrer"' in footer
 
 
-def test_macro_tab_assets_served():
+def test_macro_card_assets_served():
     c = client()
     html = c.get("/").text
-    assert 'data-tab="macro"' in html and 'id="macro-canvas"' in html and "macro.js" in html
+    assert 'id="macro-detail"' in html and 'id="macro-canvas"' in html and "macro.js" in html
+    assert "data-tab" not in html   # 탭 없이 시장 지표 카드로
     assert c.get("/static/macro.js").status_code == 200

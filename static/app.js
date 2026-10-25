@@ -180,6 +180,11 @@ function renderCards(containerId, results, onRetry) {
   destroyCharts(containerId);
   const box = $(containerId);
   box.replaceChildren(...results.map((r) => buildCard(r, containerId, onRetry)));
+  // 시장 지표 옆에 거시 지표 카드(macro.js)를 붙인다
+  if (containerId === "market-cards" && typeof macroCard === "function") {
+    const card = macroCard();
+    if (card) box.append(card);
+  }
 }
 
 function renderMessage(containerId, message) {
