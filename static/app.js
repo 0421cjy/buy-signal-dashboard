@@ -345,6 +345,7 @@ function openDetail(r) {
   $("detail-title").textContent = `${r.name} · ${r.display}`;
   document.querySelectorAll(".range button").forEach((b) => b.classList.toggle("active", b.dataset.range === "1y"));
   $("detail").showModal();
+  $("detail").focus();   // 첫 버튼(1년)이 자동 포커스로 눌린 것처럼 보이지 않게
   drawDetail();
 }
 

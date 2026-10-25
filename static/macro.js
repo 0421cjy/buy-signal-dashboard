@@ -146,6 +146,7 @@ function drawMacroDetail() {
 
 function openMacroDetail() {
   $("macro-detail").showModal();
+  $("macro-detail").focus();   // 첫 버튼(1년)이 자동 포커스로 눌린 것처럼 보이지 않게
   drawMacroDetail();
 }
 
