@@ -98,6 +98,12 @@ button:disabled { opacity: 0.6; cursor: progress; }
 .card.caution { border-left-color: var(--caution); }
 .card.hot { border-left-color: var(--error); }
 .card.extreme { border-left-color: var(--error); box-shadow: inset 0 0 0 1px var(--error); }
+.stages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin: 6px 0; }
+.stage { display: flex; flex-direction: column; align-items: center; padding: 4px 2px; border: 1px solid var(--border); border-radius: 6px; color: var(--muted); font-size: 0.78rem; line-height: 1.3; }
+.stage-label { font-weight: 700; }
+.stage.active.neutral { color: var(--neutral); background: var(--neutral-bg); border-color: var(--neutral); }
+.stage.active.caution { color: var(--caution); background: var(--caution-bg); border-color: var(--caution); }
+.stage.active.hot { color: var(--error); background: var(--error-bg); border-color: var(--error); }
 .warning { color: var(--error); background: var(--error-bg); font-weight: 700; font-size: 0.88rem; padding: 4px 8px; border-radius: 6px; }
 .card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .card-head h3 { margin: 0; font-size: 0.95rem; font-weight: 600; }

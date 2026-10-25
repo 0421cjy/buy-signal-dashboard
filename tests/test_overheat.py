@@ -52,3 +52,28 @@ def test_far_below_high_with_mild_rise_is_normal():
 def test_insufficient_history():
     r = overheat.Overheat().evaluate(ctx(series([100] * 150)))
     assert r.status == INSUFFICIENT
+
+
+def test_label_is_action_for_each_stage():
+    flat = overheat.Overheat().evaluate(ctx(series([100] * 300)))
+    spike = overheat.Overheat().evaluate(ctx(series([100] * 285 + [100 + 4 * i for i in range(1, 16)])))
+    assert flat.label == overheat.ACTIONS[overheat.NORMAL] == "보유 유지"
+    assert spike.label == overheat.ACTIONS[overheat.OVERHEAT]
+    assert "대거 익절" in spike.label and "40~50%" in spike.label
+    assert "1차 익절" in overheat.ACTIONS[overheat.CAUTION] and "20~30%" in overheat.ACTIONS[overheat.CAUTION]
+    assert "대거 익절" in spike.warning and "원점 복귀" in spike.warning
+
+
+def test_stages_mark_current_step():
+    spike = overheat.Overheat().evaluate(ctx(series([100] * 285 + [100 + 4 * i for i in range(1, 16)])))
+    assert [st["range"] for st in spike.stages] == ["0~1개", "2개", "3~4개"]
+    assert [st["label"] for st in spike.stages] == ["보유", "1차 익절", "대거 익절"]
+    assert [st["active"] for st in spike.stages] == [False, False, True]
+    assert [st["tone"] for st in spike.stages] == ["neutral", "caution", "hot"]
+    flat = overheat.Overheat().evaluate(ctx(series([100] * 300)))
+    assert [st["active"] for st in flat.stages] == [True, False, False]
+
+
+def test_stage_ranges_follow_config():
+    cfg = {**CFG, "caution_at_or_above": 1, "overheat_at_or_above": 4}
+    assert [st["range"] for st in overheat.stages(cfg, 4, overheat.NORMAL)] == ["0개", "1~3개", "4개"]

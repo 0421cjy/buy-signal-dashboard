@@ -9,7 +9,14 @@ NORMAL = "overheat_normal"
 CAUTION = "overheat_caution"
 OVERHEAT = "overheat"
 
-WARNING = "과열 조건 다수 충족 — 단기 고점 가능성에 주의"
+# 단계별 행동 가이드: 라벨에 문구, 카드에 단계 막대
+ACTIONS = {
+    NORMAL: "보유 유지",
+    CAUTION: "1차 익절 — 보유 물량 20~30% 현금화",
+    OVERHEAT: "대거 익절 — 보유 물량 40~50% 이상",
+}
+_STEPS = [(NORMAL, "보유", "neutral"), (CAUTION, "1차 익절", "caution"), (OVERHEAT, "대거 익절", "hot")]
+WARNING = "⚠ 보유 물량 40~50% 이상 대거 익절 — 원점 복귀 방어"
 
 
 def grade(hits: int, cfg: dict) -> str:
@@ -18,6 +25,17 @@ def grade(hits: int, cfg: dict) -> str:
     if hits >= cfg["caution_at_or_above"]:
         return CAUTION
     return NORMAL
+
+
+def _span(lo: int, hi: int) -> str:
+    return f"{lo}개" if lo == hi else f"{lo}~{hi}개"
+
+
+def stages(cfg: dict, total: int, status: str) -> list:
+    """단계 막대: 단계마다 충족 개수 구간과 현재 단계 여부."""
+    c, o = int(cfg["caution_at_or_above"]), int(cfg["overheat_at_or_above"])
+    ranges = {NORMAL: _span(0, c - 1), CAUTION: _span(c, o - 1), OVERHEAT: _span(o, total)}
+    return [{"label": label, "range": ranges[st], "tone": tone, "active": st == status} for st, label, tone in _STEPS]
 
 
 def _check(hit: bool, text: str) -> str:
@@ -59,7 +77,7 @@ class Overheat(Indicator):
             status=status,
             value=hits,
             display=f"{hits}/{len(checks)}",
-            label=f"과열 조건 {hits}개 충족",
+            label=ACTIONS[status],
             threshold=(
                 f"{window}일선 +{cfg['ma_gap_at_or_above'] * 100:.0f}% 이상 · RSI {cfg['rsi_at_or_above']:g} 이상 · "
                 f"{days}거래일 +{cfg['surge_at_or_above'] * 100:.0f}% 이상 · 52주 최고가 {cfg['near_high_within'] * 100:.0f}% 이내 "
@@ -70,4 +88,5 @@ class Overheat(Indicator):
             history=to_points(s),
             overlays={f"{window}일선": to_points(sma)},
             warning=WARNING if status == OVERHEAT else None,
+            stages=stages(cfg, len(checks), status),
         )

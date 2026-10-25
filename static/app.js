@@ -133,6 +133,17 @@ function helpButton(text) {
   return wrap;
 }
 
+// 단계 막대: 현재 단계 칸만 색으로 채운다
+function stageBar(stages) {
+  const bar = el("div", "stages");
+  stages.forEach((st) => {
+    const cell = el("div", `stage ${st.tone}${st.active ? " active" : ""}`);
+    cell.append(el("span", "stage-label", st.label), el("span", "stage-range", st.range));
+    bar.append(cell);
+  });
+  return bar;
+}
+
 function buildCard(r, containerId, onRetry) {
   const st = STATUS[r.status] || STATUS.neutral;
   const card = el("article", `card ${st.cls}${r.warning ? " extreme" : ""}`);
@@ -147,6 +158,7 @@ function buildCard(r, containerId, onRetry) {
   card.append(head);
 
   card.append(el("div", "value", r.display || "—"));
+  if ((r.stages || []).length) card.append(stageBar(r.stages));
   if (r.label) card.append(el("div", "label", r.label));
   if (r.warning) card.append(el("div", "warning", r.warning));
 

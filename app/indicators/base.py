@@ -36,6 +36,7 @@ class IndicatorResult:
     thresholds: List[float] = field(default_factory=list)
     overlays: Dict[str, List[Dict[str, Any]]] = field(default_factory=dict)
     warning: Optional[str] = None  # 판정과 별개로 카드에 강조해 보여줄 경고 문구
+    stages: List[Dict[str, Any]] = field(default_factory=list)  # 카드에 단계 막대로 보여줄 단계(현재 단계 active)
     error: Optional[str] = None
 
     def to_dict(self) -> dict:
