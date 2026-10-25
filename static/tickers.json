@@ -7,6 +7,7 @@
   {"symbol": "AMZN", "name": "Amazon", "ko": "아마존", "market": "US"},
   {"symbol": "META", "name": "Meta Platforms", "ko": "메타", "market": "US", "aliases": ["페이스북"]},
   {"symbol": "TSLA", "name": "Tesla", "ko": "테슬라", "market": "US"},
+  {"symbol": "SPCX", "name": "SpaceX (Space Exploration Technologies)", "ko": "스페이스X", "market": "US", "aliases": ["스페이스엑스", "SpaceX"]},
   {"symbol": "BRK-B", "name": "Berkshire Hathaway B", "ko": "버크셔 해서웨이", "market": "US", "aliases": ["버핏"]},
   {"symbol": "AVGO", "name": "Broadcom", "ko": "브로드컴", "market": "US"},
   {"symbol": "TSM", "name": "Taiwan Semiconductor (TSMC)", "ko": "TSMC", "market": "US", "aliases": ["대만 반도체"]},
