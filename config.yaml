@@ -38,3 +38,15 @@ indicators:
     min_years: 3
     min_days_per_year: 200
   moving_average: { enabled: true, daily_window: 200, weekly_window: 200 }
+  # 단기 과열(참고, 점수 제외): 아래 4가지 중 caution 개수 이상 '과열 주의', overheat 개수 이상 '과열'
+  overheat:
+    enabled: true
+    ma_window: 200
+    ma_gap_at_or_above: 0.50     # 200일선보다 +50% 이상 위
+    rsi_period: 14
+    rsi_at_or_above: 80          # 일봉 RSI 80 이상
+    surge_days: 15               # 최근 15거래일(3주) 동안
+    surge_at_or_above: 0.25      #   +25% 이상 상승
+    near_high_within: -0.03      # 52주 최고가 대비 -3% 이내
+    caution_at_or_above: 2
+    overheat_at_or_above: 3

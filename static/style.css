@@ -13,6 +13,8 @@
   --strong-bg: #e3f6eb;
   --signal: #b7791f;
   --signal-bg: #fdf3dc;
+  --caution: #dd6b20;
+  --caution-bg: #feebdc;
   --neutral: #5f6b7a;
   --neutral-bg: #eef1f4;
   --error: #c53030;
@@ -34,6 +36,8 @@
     --strong-bg: #173527;
     --signal: #e8b54d;
     --signal-bg: #3a2f17;
+    --caution: #f6935a;
+    --caution-bg: #3d2416;
     --neutral: #96a1ae;
     --neutral-bg: #232a32;
     --error: #f07878;
@@ -91,6 +95,8 @@ button:disabled { opacity: 0.6; cursor: progress; }
 .card.strong { border-left-color: var(--strong); }
 .card.signal { border-left-color: var(--signal); }
 .card.error { border-left-color: var(--error); }
+.card.caution { border-left-color: var(--caution); }
+.card.hot { border-left-color: var(--error); }
 .card.extreme { border-left-color: var(--error); box-shadow: inset 0 0 0 1px var(--error); }
 .warning { color: var(--error); background: var(--error-bg); font-weight: 700; font-size: 0.88rem; padding: 4px 8px; border-radius: 6px; }
 .card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
@@ -114,6 +120,8 @@ button:disabled { opacity: 0.6; cursor: progress; }
 .badge.signal { color: var(--signal); background: var(--signal-bg); }
 .badge.neutral { color: var(--neutral); background: var(--neutral-bg); }
 .badge.error { color: var(--error); background: var(--error-bg); }
+.badge.caution { color: var(--caution); background: var(--caution-bg); }
+.badge.hot { color: var(--error); background: var(--error-bg); }
 .tag { font-size: 0.72rem; color: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 0 5px; margin-left: 6px; }
 .value { font-size: 1.8rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 .label { font-size: 0.92rem; }

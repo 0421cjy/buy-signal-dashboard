@@ -30,6 +30,11 @@ DEFAULT_CONFIG: dict = {
             "min_years": 3, "min_days_per_year": 200,
         },
         "moving_average": {"enabled": True, "daily_window": 200, "weekly_window": 200},
+        "overheat": {
+            "enabled": True, "ma_window": 200, "ma_gap_at_or_above": 0.50, "rsi_period": 14, "rsi_at_or_above": 80,
+            "surge_days": 15, "surge_at_or_above": 0.25, "near_high_within": -0.03,
+            "caution_at_or_above": 2, "overheat_at_or_above": 3,
+        },
     },
 }
 

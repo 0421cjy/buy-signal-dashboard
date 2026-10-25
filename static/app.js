@@ -6,6 +6,10 @@ const STATUS = {
   neutral: { text: "중립", cls: "neutral" },
   error: { text: "조회 실패", cls: "error" },
   insufficient_data: { text: "데이터 부족", cls: "error" },
+  // 단기 과열 카드(참고) 전용 — 매수 신호 색과 구분
+  overheat_normal: { text: "정상", cls: "neutral" },
+  overheat_caution: { text: "과열 주의", cls: "caution" },
+  overheat: { text: "과열", cls: "hot" },
 };
 const EVALUATED = ["strong_signal", "signal", "neutral"];
 const RECENT_KEY = "buy-signal:recent";

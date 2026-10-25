@@ -52,3 +52,12 @@ def test_macro_card_assets_served():
     assert 'id="macro-detail"' in html and 'id="macro-canvas"' in html and "macro.js" in html
     assert "data-tab" not in html   # 탭 없이 시장 지표 카드로
     assert c.get("/static/macro.js").status_code == 200
+
+
+def test_overheat_statuses_have_badges():
+    c = client()
+    js = c.get("/static/app.js").text
+    for status in ("overheat_normal", "overheat_caution", "overheat:"):
+        assert status in js
+    css = c.get("/static/style.css").text
+    assert ".badge.caution" in css and ".badge.hot" in css

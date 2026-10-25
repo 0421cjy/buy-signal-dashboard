@@ -67,7 +67,7 @@ def test_ticker():
     body = make_client().get("/api/ticker/aapl").json()
     assert body["symbol"] == "AAPL"
     assert body["name"] == "Name of AAPL"
-    assert [r["id"] for r in body["results"]] == ["rsi", "mdd", "moving_average"]
+    assert [r["id"] for r in body["results"]] == ["rsi", "mdd", "moving_average", "overheat"]
 
 
 def test_ticker_korean_fallback():
