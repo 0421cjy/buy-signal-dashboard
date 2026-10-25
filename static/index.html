@@ -17,6 +17,11 @@
         <button id="refresh-btn" type="button" class="ghost">새로고침</button>
       </div>
     </div>
+    <nav class="tabs" role="tablist">
+      <button type="button" role="tab" data-tab="signals" class="active">매수 신호</button>
+      <button type="button" role="tab" data-tab="macro">거시 지표</button>
+    </nav>
+    <div id="signals-controls">
     <form id="search-form" autocomplete="off">
       <div class="search-box">
         <input id="ticker-input" placeholder="티커 또는 종목명 (AAPL, 005930, 삼성전자)" aria-label="티커"
@@ -27,9 +32,11 @@
     </form>
     <p id="ticker-error" class="error-text" hidden></p>
     <div id="recent" class="chips"></div>
+    </div>
   </header>
 
   <main>
+    <div id="tab-signals">
     <section id="summary" class="summary" aria-live="polite"></section>
 
     <section>
@@ -43,6 +50,25 @@
         <p class="hint">티커를 검색하면 RSI, MDD(올해 고점 대비), 200일/200주 이동평균을 확인할 수 있습니다.</p>
       </div>
     </section>
+    </div>
+
+    <div id="tab-macro" hidden>
+      <section>
+        <h2>거시 지표 <span class="small">WTI · CPI(전년 대비) · 미국 기준금리(실효) · 국채 2년·10년</span></h2>
+        <div id="macro-chips" class="macro-chips"></div>
+        <p id="macro-status" class="small"></p>
+        <div class="macro-toolbar">
+          <div class="macro-range">
+            <button type="button" data-range="1y">1년</button>
+            <button type="button" data-range="5y" class="active">5년</button>
+            <button type="button" data-range="10y">10년</button>
+            <button type="button" data-range="20y">20년</button>
+          </div>
+          <span class="small">범례를 누르면 선을 켜고 끌 수 있습니다 (WTI를 끄면 금리 범위로 축이 다시 맞춰짐)</span>
+        </div>
+        <div class="macro-chart"><canvas id="macro-canvas"></canvas></div>
+      </section>
+    </div>
   </main>
 
   <footer class="site-footer">
@@ -52,7 +78,7 @@
       모든 투자 결정과 그 결과에 대한 책임은 투자자 본인에게 있습니다.
     </p>
     <p class="small">
-      데이터: Yahoo Finance, CNN Fear &amp; Greed Index (비공식 경로, 지연·누락될 수 있음)
+      데이터: Yahoo Finance, CNN Fear &amp; Greed Index (비공식 경로, 지연·누락될 수 있음), 미국 연준 FRED
       · <a href="https://github.com/0421cjy/buy-signal-dashboard" target="_blank" rel="noopener noreferrer">GitHub 소스 코드</a>
     </p>
   </footer>
@@ -71,5 +97,6 @@
 
   <script src="/static/suggest.js"></script>
   <script src="/static/app.js"></script>
+  <script src="/static/macro.js"></script>
 </body>
 </html>

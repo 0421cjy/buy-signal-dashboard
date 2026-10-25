@@ -12,9 +12,10 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.config import load_config
-from app.data import fear_greed, prices
+from app.data import fear_greed, fred, prices
 from app.data.cache import TTLCache
 from app.indicators.registry import evaluate_scope
+from app.macro import build_macro
 from app.scoring import score
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
@@ -33,12 +34,15 @@ def create_app(
     fetch_daily: Optional[Callable[[str], pd.Series]] = None,
     fetch_fear_greed: Optional[Callable[[], dict]] = None,
     fetch_name: Optional[Callable[[str], str]] = None,
+    fetch_fred: Optional[Callable] = None,
 ) -> FastAPI:
     config = config or load_config()
     fetch_daily = fetch_daily or prices.fetch_history
     fetch_fear_greed = fetch_fear_greed or fear_greed.fetch_fear_greed
     fetch_name = fetch_name or prices.fetch_name
     cache = TTLCache(config["cache_ttl_seconds"])
+    fetch_fred = fetch_fred or fred.fetch_fred
+    macro_cache = TTLCache(3600)   # 거시 지표는 자주 바뀌지 않아 1시간 저장
     indicators_cfg = config["indicators"]
 
     app = FastAPI(title="매수 기준 대시보드")
@@ -69,6 +73,11 @@ def create_app(
     @app.get("/api/settings")
     def settings():
         return {"auto_refresh_minutes": config.get("auto_refresh_minutes", 0)}
+
+    @app.get("/api/macro")
+    def macro(refresh: int = 0):
+        data = macro_cache.get_or_set(("macro",), lambda: build_macro(fetch_fred), refresh=bool(refresh))
+        return {**data, "fetched_at": datetime.now().isoformat(timespec="seconds")}
 
     @app.get("/api/market")
     def market(refresh: int = 0):

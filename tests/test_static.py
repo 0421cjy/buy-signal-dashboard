@@ -44,3 +44,10 @@ def test_footer_has_disclaimer_and_github_link():
     assert "투자 권유가 아닙니다" in footer
     assert 'href="https://github.com/0421cjy/buy-signal-dashboard"' in footer
     assert 'rel="noopener noreferrer"' in footer
+
+
+def test_macro_tab_assets_served():
+    c = client()
+    html = c.get("/").text
+    assert 'data-tab="macro"' in html and 'id="macro-canvas"' in html and "macro.js" in html
+    assert c.get("/static/macro.js").status_code == 200
