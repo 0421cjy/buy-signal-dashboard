@@ -219,3 +219,8 @@ def test_weekly_rsi_overlay_matches_card_midweek():
     r = rsi.Rsi().evaluate(ctx(IND["rsi"], s))
     card_value = float(r.details["주봉 RSI(14)"].split()[0])
     assert round(r.overlays["주봉 RSI"][-1]["value"], 1) == card_value
+
+
+def test_ma_chart_line_is_named_price():
+    r = moving_average.MovingAverage().evaluate(ctx(IND["moving_average"], series([100] * 300)))
+    assert r.history_label == "주가"

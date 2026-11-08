@@ -76,5 +76,6 @@ class MovingAverage(Indicator):
             as_of=as_of(s),
             details=details,
             history=to_points(s),
+            history_label="주가",
             overlays=overlays,
         )
