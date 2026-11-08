@@ -60,8 +60,8 @@ def test_label_is_action_for_each_stage():
     spike = overheat.Overheat().evaluate(ctx(series([100] * 285 + [100 + 4 * i for i in range(1, 16)])))
     assert flat.label == overheat.ACTIONS[overheat.NORMAL] == "보유 유지"
     assert spike.label == overheat.ACTIONS[overheat.OVERHEAT]
-    assert "대거 익절" in spike.label and "40~50%" in spike.label
-    assert "1차 익절" in overheat.ACTIONS[overheat.CAUTION] and "20~30%" in overheat.ACTIONS[overheat.CAUTION]
+    assert "대거 익절" in spike.label and "20~30%" in spike.label
+    assert "1차 익절" in overheat.ACTIONS[overheat.CAUTION] and "10~15%" in overheat.ACTIONS[overheat.CAUTION]
     assert "대거 익절" in spike.warning and "원점 복귀" in spike.warning
 
 

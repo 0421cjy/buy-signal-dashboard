@@ -12,11 +12,11 @@ OVERHEAT = "overheat"
 # 단계별 행동 가이드: 라벨에 문구, 카드에 단계 막대
 ACTIONS = {
     NORMAL: "보유 유지",
-    CAUTION: "1차 익절 — 보유 물량 20~30% 현금화",
-    OVERHEAT: "대거 익절 — 보유 물량 40~50% 이상",
+    CAUTION: "1차 익절 — 보유 물량 10~15% 현금화",
+    OVERHEAT: "대거 익절 — 보유 물량 20~30%",
 }
 _STEPS = [(NORMAL, "보유", "neutral"), (CAUTION, "1차 익절", "caution"), (OVERHEAT, "대거 익절", "hot")]
-WARNING = "⚠ 보유 물량 40~50% 이상 대거 익절 — 원점 복귀 방어"
+WARNING = "⚠ 보유 물량 20~30% 대거 익절 — 원점 복귀 방어"
 
 
 def grade(hits: int, cfg: dict) -> str:
