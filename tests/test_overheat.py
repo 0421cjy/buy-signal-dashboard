@@ -32,6 +32,7 @@ def test_spike_meets_all_four_and_warns():
     assert r.display == "4/4"
     assert all(v.startswith("✔") for v in r.details.values())
     assert "200일선" in r.overlays
+    assert r.history_label == "주가"   # 차트의 파란선 이름
 
 
 def test_flat_is_normal():

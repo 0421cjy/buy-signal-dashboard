@@ -77,7 +77,7 @@ function chartConfig(r, range, mini) {
   const points = sliceRange(r.history || [], range);
   const labels = points.map((p) => p.date);
   const datasets = [{
-    label: r.name, data: points.map((p) => p.value),
+    label: r.history_label || r.name, data: points.map((p) => p.value),
     borderColor: css("--line"), borderWidth: mini ? 1.5 : 2, pointRadius: 0, tension: 0,
   }];
   const overlayColors = [css("--overlay-1"), css("--overlay-2")];

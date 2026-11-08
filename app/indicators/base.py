@@ -33,6 +33,7 @@ class IndicatorResult:
     as_of: Optional[str] = None
     details: Dict[str, str] = field(default_factory=dict)
     history: List[Dict[str, Any]] = field(default_factory=list)
+    history_label: str = ""  # 차트 기본 선의 이름. 비우면 지표 이름
     thresholds: List[float] = field(default_factory=list)
     overlays: Dict[str, List[Dict[str, Any]]] = field(default_factory=dict)
     warning: Optional[str] = None  # 판정과 별개로 카드에 강조해 보여줄 경고 문구

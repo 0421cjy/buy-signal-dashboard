@@ -86,6 +86,7 @@ class Overheat(Indicator):
             as_of=as_of(s),
             details={name: _check(hit, text) for hit, name, text in checks},
             history=to_points(s),
+            history_label="주가",
             overlays={f"{window}일선": to_points(sma)},
             warning=WARNING if status == OVERHEAT else None,
             stages=stages(cfg, len(checks), status),
